@@ -46,9 +46,9 @@ class LstmPredictor(nn.Module):
         self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=1,batch_first=True)
 
         self.regressor=nn.Sequential(
-            nn.Linear(self.hidden_dim,2*self.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(2*self.hidden_dim,1),
+            nn.Linear(self.hidden_dim,3*self.hidden_dim),
+            nn.tanh(),
+            nn.Linear(3*self.hidden_dim,1),
             nn.ReLU())
 
 

@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 
 from constants import DATA_DIR
-from dataset.dataset import DatasetType
+from  import DatasetType
 
 
 class LstmDataset(Dataset):
@@ -58,3 +58,7 @@ class LstmDataset(Dataset):
 
         #return the iterator
         return features_tensor
+
+
+
+

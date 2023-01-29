@@ -36,10 +36,15 @@ def cli():
 
 def main(args):
     model_name = "base_lstm_ae" if args.model_name is None else args.model_name
-    features_encoder = FeaturesAENetwork(experiment_dir=os.path.join(EXPERIMENTS_DIR, "base_features_ae")).to(DEVICE)
+
+    features_encoder = None
+    # features_encoder = FeaturesAENetwork(experiment_dir=os.path.join(EXPERIMENTS_DIR, "base_features_ae")).to(DEVICE)
+
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
 
-    network=LstmPredictor(features_encoder=features_encoder, experiment_dir=experiment_dir).to(DEVICE)
+    network=LstmPredictor(features_encoder=None, experiment_dir=experiment_dir).to(DEVICE)
+    # network = LstmPredictor(features_encoder=features_encoder, experiment_dir=experiment_dir).to(DEVICE)
+
     optimizer = Adam(network.parameters(), lr=args.learning_rate)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
     loss_fn= SymmetricMeanAbsolutePercentageError().to(DEVICE)
