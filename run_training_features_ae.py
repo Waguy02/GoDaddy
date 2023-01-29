@@ -23,11 +23,11 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.0001, help="Learning rate of Adam optimized")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=50, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
-    parser.add_argument("--batch_size", "-bs", type=int, default=512, help="Batch size for training")
+    parser.add_argument("--batch_size", "-bs", type=int, default=64, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
     return parser.parse_args()

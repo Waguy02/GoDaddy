@@ -66,6 +66,9 @@ class TrainerLstmPredictor:
 
     def fit(self,train_dataloader,val_dataloader):
         logging.info("Launch training on {}".format(DEVICE))
+        if self.network.use_encoder:
+            logging.info("Using encoder census data")
+
         self.summary_writer = SummaryWriter(log_dir=self.experiment_dir)
         itr = self.start_epoch * len(train_dataloader) * self.batch_size  ##Global counter for steps
 
@@ -113,8 +116,8 @@ class TrainerLstmPredictor:
                 # The density is the last item of the batch
                 y_true = batch[:,:,-1]
 
-                # nb_futures= min(train_dataloader.dataset.seq_len-1,3)
-                nb_futures=train_dataloader.dataset.seq_len-1
+                nb_futures= min(train_dataloader.dataset.seq_len-1,3)
+                # nb_futures=train_dataloader.dataset.seq_len-1
                 loss=self.loss_fn(y_pred[:,-1-nb_futures:-1],y_true[:,-nb_futures:])
 
                 """
@@ -144,6 +147,10 @@ class TrainerLstmPredictor:
             }
 
             logging.info("Epoch {} - Train loss: {:.4f} - Val loss: {:.4f}".format(epoch, running_loss.value, epoch_val_loss.value))
+
+            infos["hidden_dim"]=self.network.hidden_dim
+            infos["input_dim"]=self.network.input_dim
+            infos["use_census"]=self.network.use_census
 
             if running_loss.value < best_loss:
                 best_loss = running_loss.value
@@ -179,7 +186,10 @@ class TrainerLstmPredictor:
                 2.Loss computation and other metrics
                 """
                 y_true = batch[:,:,-1]
-                loss = self.loss_fn(y_pred[:, :-1], y_true[:, 1:])
+                nb_futures = min(val_dataloader.dataset.seq_len - 1, 3)
+                # nb_futures=train_dataloader.dataset.seq_len-1
+                loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
+
                 running_loss.send(loss.item())
 
 

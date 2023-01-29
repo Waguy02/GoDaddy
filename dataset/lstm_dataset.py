@@ -4,16 +4,16 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from constants import DATA_DIR, N_CENSUS_FEATURES
+from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS
 from my_utils import DatasetType
 
 
 class LstmDataset(Dataset):
-    def __init__(self, type, seq_len, stride=1):
+    def __init__(self, type, seq_len, stride=1,use_census=USE_CENSUS):
         self.type = type
         self.seq_len = seq_len
         self.stride = stride
-
+        self.use_census = use_census
         self.file = os.path.join(DATA_DIR, f"train_with_census_{'train' if type==DatasetType.TRAIN else 'val' if type==DatasetType.VALID  else 'test'}.csv")
         self.load_data()
 
@@ -53,14 +53,18 @@ class LstmDataset(Dataset):
         #Taking seq_len rows and considering the following features
         #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc, active,microbusiness_density
 
-        if N_CENSUS_FEATURES>0:
+        if self.use_census:
             features_tensor = torch.tensor(
-                rows_data[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc','year', 'active',
+                rows_data[['cfips','pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc','year',
                             'microbusiness_density']].values, dtype=torch.float32)
+
+            #Normalize the cfips and the year
+            features_tensor[:,0]=features_tensor[:,0]/1000
+            features_tensor[:,6]=features_tensor[:,6]/1000
 
         else :
             features_tensor = torch.tensor(
-                rows_data[['active','microbusiness_density']].values, dtype=torch.float32)  # Not considering the census features
+                rows_data[['microbusiness_density']].values, dtype=torch.float32)  # Not considering the census features
 
         #return the iterator
         return features_tensor

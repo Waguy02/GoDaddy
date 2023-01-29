@@ -3,13 +3,15 @@ import os
 import torch
 import torchvision.models
 from torch import nn
-from constants import ROOT_DIR, DEVICE, AE_LATENT_DIM, LSTM_HIDDEN_DIM, N_CENSUS_FEATURES
+from constants import ROOT_DIR, DEVICE, AE_LATENT_DIM, LSTM_HIDDEN_DIM, N_CENSUS_FEATURES, USE_CENSUS, EXPERIMENTS_DIR, \
+    FEATURES_AE_CENSUS_DIR
+from networks.features_autoencoder import FeaturesAENetwork
 
 
 class LstmPredictor(nn.Module):
 
-    def __init__(self,  input_dim=N_CENSUS_FEATURES+2, hidden_dim=LSTM_HIDDEN_DIM,
-                 features_encoder=None,
+    def __init__(self, hidden_dim=LSTM_HIDDEN_DIM,
+                 use_encoder=USE_CENSUS,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
         @param features_encoder :
@@ -22,9 +24,16 @@ class LstmPredictor(nn.Module):
         """
 
         super(LstmPredictor, self).__init__()
-        self.features_encoder = features_encoder  ## Features encoder
-        self.use_encoder = self.features_encoder is not None
-        self.input_dim = input_dim if not self.use_encoder else features_encoder.hidden_dim+2
+
+
+        self.use_encoder = use_encoder
+        if self.use_encoder:
+            self.features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,load_best=True).to(DEVICE)
+            self.input_dim = self.features_encoder.hidden_dim + 1
+        else :
+            self.features_encoder = None
+            self.input_dim =1
+
         self.hidden_dim = hidden_dim
 
         self.experiment_dir = experiment_dir
@@ -96,10 +105,10 @@ class LstmPredictor(nn.Module):
         @param input:
         @return:
         """
-        #1. First apply the encoder to the first 6 features of each element in the sequence
+        #1. First apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
         if self.use_encoder:
-            encoded_features = self.features_encoder.encode(input[:, :, :6])
-            input = torch.cat((encoded_features, input[:, :, 6:]), dim=-1)
+            encoded_features = self.features_encoder.encode(input[:, :, :N_CENSUS_FEATURES])
+            input = torch.cat((encoded_features, input[:, :, N_CENSUS_FEATURES:]), dim=-1)
 
         #2. Then apply the LSTM
         output, _ = self.lstm(input)

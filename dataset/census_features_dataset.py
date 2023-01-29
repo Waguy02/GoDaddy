@@ -14,7 +14,7 @@ from constants import DATA_DIR
 
 from enum import Enum
 
-from dataset.dataset import DatasetType
+from my_utils import DatasetType
 
 
 class CensusDataset(Dataset):
@@ -41,14 +41,22 @@ class CensusDataset(Dataset):
 
     def __getitem__(self, idx):
         """
-        pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc,year .
+        cfips, pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc,year .
         Retrieve the following features from the dataset and return the corresponding tensor
 
         Returns:
         """
         row=self.data.iloc[idx]
-        features_tensor=torch.tensor([row['pct_bb'],row['pct_college'],row['pct_foreign_born'],\
+        features_tensor=torch.tensor([row['cfips'],
+                                      row['pct_bb'],row['pct_college'],row['pct_foreign_born'],
                                       row['pct_it_workers'],row['median_hh_inc'],row['year']],dtype=torch.float32)
+
+        #Cfpis should be normalized
+        features_tensor[0]=features_tensor[0]/1000
+
+        ##years should be normalized
+        features_tensor[6]=features_tensor[6]/1000
+
         return features_tensor
 
 

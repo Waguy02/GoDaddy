@@ -36,16 +36,16 @@ class FeaturesAENetwork(nn.Module):
 
         #1. Encoder
         self.encoder=nn.Sequential(
-            nn.Linear(self.input_dim,8),
-            nn.ReLU(),
-            nn.Linear(8,4), #Bottleneck
-            nn.Linear(4,self.hidden_dim))
+            nn.Linear(self.input_dim,4),
+            nn.Sigmoid(),
+            nn.Linear(4,self.hidden_dim)) #Bottleneck
+
 
         #2. Decoder
         self.decoder=nn.Sequential(
-            nn.Linear(self.hidden_dim,self.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(self.hidden_dim,self.input_dim))
+            nn.Linear(self.hidden_dim,4),
+            nn.Sigmoid(),
+            nn.Linear(4,self.input_dim))
 
 
 

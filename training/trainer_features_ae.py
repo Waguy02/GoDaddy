@@ -109,7 +109,7 @@ class TrainerFeaturesAE:
                 loss= self.criterion(y, batch.to(DEVICE))
                 # Add L1 regularization to the loss
                 for param in self.network.parameters():
-                    loss += 1e-5 * torch.norm(param, 1)
+                    loss += 1e-7 * torch.norm(param, 1)
                 """
                 
                 
@@ -127,17 +127,19 @@ class TrainerFeaturesAE:
                 4.Writing logs and tensorboard data, loss and other metrics
                 """
                 self.summary_writer.add_scalar("Step_train/loss", loss.item(), itr)
-
-            epoch_val_loss,sparsity_eval_score =self.eval(val_dataloader,epoch)
+                pbar.set_postfix(current_loss=loss.item(), running_loss=running_loss.value)
+            epoch_val_loss =self.eval(val_dataloader,epoch)
 
 
             infos = {
+                "hidden_dim": self.network.hidden_dim,
+                "input_dim": self.network.input_dim,
                 "epoch": epoch,
                 "train_loss":running_loss.value,
                 "val_loss":epoch_val_loss.value,
-                "sparsity_eval_score":sparsity_eval_score.value,
                 "lr": self.optimizer.param_groups[0]['lr']
             }
+            logging.info("Epoch {} : train_loss = {}, val_loss = {}".format(epoch, running_loss.value, epoch_val_loss.value))
 
             if running_loss.value < best_loss:
                 best_loss = running_loss.value
@@ -151,7 +153,7 @@ class TrainerFeaturesAE:
             ##Displaying the metrics : epoch_train_loss, epoch_val_loss, sparsity_eval_score using summary_writer
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
             self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
-            self.summary_writer.add_scalar("Epoch_val/sparsity_eval_score", sparsity_eval_score.value, epoch)
+
 
 
 
@@ -163,7 +165,6 @@ class TrainerFeaturesAE:
         with torch.no_grad():
             self.network.eval()
             running_loss=Averager()
-            running_sparsity_score=Averager()
             for _, batch in enumerate(tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")):
                 """
                 Training lopp
@@ -180,16 +181,14 @@ class TrainerFeaturesAE:
                 loss =  self.criterion(y, batch.to(DEVICE))
                 # Add L1 regularization to the loss
                 for param in self.network.parameters():
-                    loss += 1e-5 * torch.norm(param, 1)
+                    loss += 1e-7 * torch.norm(param, 1)
 
                 running_loss.send(loss.cpu().item())
 
 
-                ##1. Sparsity of the latent space
-                nnz_latent = torch.sum(torch.abs(h)>1e-1, dim=1)
-                sparsity_score = torch.mean(nnz_latent.float())
-                running_sparsity_score.send(sparsity_score.item())
 
-        return running_loss,running_sparsity_score
+
+
+        return running_loss
 
 
