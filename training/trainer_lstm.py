@@ -177,7 +177,6 @@ class TrainerLstmPredictor:
                 """
                 y_true = batch[:,:,-1]
                 loss = self.loss_fn(y_pred[:, :-1], y_true[:, 1:])
-
                 running_loss.send(loss.item())
 
 
