@@ -150,7 +150,7 @@ class TrainerLstmPredictor:
 
             infos["hidden_dim"]=self.network.hidden_dim
             infos["input_dim"]=self.network.input_dim
-            infos["use_census"]=self.network.use_census
+            infos["use_census"]=self.network.use_encoder
 
             if running_loss.value < best_loss:
                 best_loss = running_loss.value
