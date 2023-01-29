@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 
 from constants import DATA_DIR
-from  import DatasetType
+from dataset.dataset import DatasetType
 
 
 class LstmDataset(Dataset):
