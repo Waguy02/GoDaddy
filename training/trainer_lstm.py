@@ -112,7 +112,7 @@ class TrainerLstmPredictor:
                 """
                 # The density is the last item of the batch
                 y_true = batch[:,:,-1]
-                loss=self.loss_fn(y_pred[:-1,:],y_true[1:,:])
+                loss=self.loss_fn(y_pred[:,:-1],y_true[:,1:])
 
                 """
                 3.Optimizing
@@ -176,8 +176,8 @@ class TrainerLstmPredictor:
                 2.Loss computation and other metrics
                 """
                 y_true = batch[:,:,-1]
+                loss = self.loss_fn(y_pred[:, :-1], y_true[:, 1:])
 
-                loss=self.loss_fn(y_pred[:-1,:,],y_true[1:,:])
                 running_loss.send(loss.item())
 
 

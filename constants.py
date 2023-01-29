@@ -8,11 +8,11 @@ EXPERIMENTS_DIR=os.path.join(ROOT_DIR, "logs/experiments")
 use_cuda = torch .cuda.is_available()
 DEVICE = torch.device("cuda" if use_cuda else "cpu")
 
-N_CENSUS_FEATURES= 6
-# N_CENSUS_FEATURES= 0  #Without census features
+# N_CENSUS_FEATURES= 6
+N_CENSUS_FEATURES= 0  #Without census features
 
 AE_LATENT_DIM= 16
-LSTM_HIDDEN_DIM = 16
+LSTM_HIDDEN_DIM = 6
 
-SEQ_LEN=4
+SEQ_LEN=6
 SEQ_STRIDE= 1

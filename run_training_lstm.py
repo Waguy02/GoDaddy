@@ -23,7 +23,7 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.005, help="Learning rate of Adam optimized")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
@@ -33,7 +33,7 @@ def cli():
     return parser.parse_args()
 
 def main(args):
-    model_name = "base_lstm_no_ae" if args.model_name is None else args.model_name
+    model_name = "base_lstm_no_census_no_ae" if args.model_name is None else args.model_name
 
     features_encoder = None
     # features_encoder = FeaturesAENetwork(experiment_dir=os.path.join(EXPERIMENTS_DIR, "base_features_ae")).to(DEVICE)
