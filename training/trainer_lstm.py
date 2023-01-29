@@ -34,7 +34,6 @@ class TrainerLstmPredictor:
         """
         self.network = network
         self.batch_size = batch_size
-
         self.loss_fn=criterion
 
         self.optimizer = optimizer
@@ -75,7 +74,7 @@ class TrainerLstmPredictor:
         #Save model graph
         self.summary_writer.add_graph(self.network, next(iter(train_dataloader)).to(DEVICE))
 
-        best_loss = 1e20  # infinity
+        self.best_val_loss = 1e20  # infinity
         if os.path.exists(self.model_info_file):
             with open(self.model_info_file, "r") as f:
                 model_info = json.load(f)
@@ -87,7 +86,7 @@ class TrainerLstmPredictor:
         if os.path.exists(self.model_info_best_file):
             with open(self.model_info_best_file, "r") as f:
                 best_model_info = json.load(f)
-                best_loss = best_model_info["val_loss"]
+                self.best_val_loss = best_model_info["val_loss"]
 
 
         for epoch in range(self.start_epoch, self.nb_epochs):  # Training loop
@@ -152,8 +151,8 @@ class TrainerLstmPredictor:
             infos["input_dim"]=self.network.input_dim
             infos["use_census"]=self.network.use_encoder
 
-            if running_loss.value < best_loss:
-                best_loss = running_loss.value
+            if epoch_val_loss.value < self.best_val_loss:
+                self.best_val_loss = epoch_val_loss.value
                 best = True
             else:
                 best = False

@@ -42,7 +42,7 @@ def train_fn(config, experiment_dir = os.path.join(EXPERIMENTS_DIR,"ray_tune")):
                                   criterion=criterion,
                                   optimizer=optimizer,
                                     scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=5,min_lr=1e-5),
-                                  nb_epochs=20,
+                                  nb_epochs=10,
                                   batch_size=config["batch_size"])
     trainer.fit(train_dataloader, val_dataloader)
     return trainer.best_val_loss
@@ -50,7 +50,7 @@ def train_fn(config, experiment_dir = os.path.join(EXPERIMENTS_DIR,"ray_tune")):
 
 
 if __name__ == '__main__':
-        tune.run(train_fn, config={"lr": tune.loguniform(1e-4, 1e-1),
+        tune.run(train_fn, config={"lr": tune.choice([1e-1, 5*1e-2, 1e-2, 5*1e-3, 1e-3]),
                                "use_census": tune.choice([True, False]),
                                 "batch_size": tune.choice([32,256]),
                                 "hidden_dim": tune.choice([2, 4,6,8]),
