@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from constants import DATA_DIR
+from constants import DATA_DIR, N_CENSUS_FEATURES
 from my_utils import DatasetType
 
 
@@ -39,8 +39,6 @@ class LstmDataset(Dataset):
         2. And the difference between the date(first_day_of_month) should be at most 3 months
         """
         i = item * self.stride
-        county = self.data.iloc[i]['cfips']
-
         rows_data=self.data.iloc[i:i+self.seq_len]
 
         #Check if the county is the same
@@ -54,12 +52,15 @@ class LstmDataset(Dataset):
 
         #Taking seq_len rows and considering the following features
         #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc, active,microbusiness_density
-        # features_tensor = torch.tensor(
-        #     rows_data[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc','year', 'active',
-        #                 'microbusiness_density']].values, dtype=torch.float32)
 
-        features_tensor = torch.tensor(
-            rows_data[['active','microbusiness_density']].values, dtype=torch.float32)  # Not considering the census features
+        if N_CENSUS_FEATURES>0:
+            features_tensor = torch.tensor(
+                rows_data[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc','year', 'active',
+                            'microbusiness_density']].values, dtype=torch.float32)
+
+        else :
+            features_tensor = torch.tensor(
+                rows_data[['active','microbusiness_density']].values, dtype=torch.float32)  # Not considering the census features
 
         #return the iterator
         return features_tensor

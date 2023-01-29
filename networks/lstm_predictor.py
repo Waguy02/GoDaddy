@@ -46,10 +46,8 @@ class LstmPredictor(nn.Module):
         self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=1,batch_first=True)
 
         self.regressor=nn.Sequential(
-            nn.Linear(self.hidden_dim,1),
-            nn.ReLU())
-
-
+            nn.Linear(self.hidden_dim,1)
+            )
 
         if self.use_encoder:
             # Freeze the encoder weights

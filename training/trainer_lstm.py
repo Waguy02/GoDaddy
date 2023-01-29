@@ -98,7 +98,6 @@ class TrainerLstmPredictor:
                 """
                 Training lopp
                 """
-
                 self.optimizer.zero_grad()
                 itr += self.batch_size
                 """
