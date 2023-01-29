@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 
 from constants import DATA_DIR
-from dataset.dataset import DatasetType
+from my_utils import DatasetType
 
 
 class LstmDataset(Dataset):
@@ -44,7 +44,9 @@ class LstmDataset(Dataset):
         rows_data=self.data.iloc[i:i+self.seq_len]
 
         #Check if the county is the same
-        is_valid = len(rows_data)==self.seq_len and (rows_data['cfips'].unique()[0]==county) and (rows_data['first_day_of_month'].diff().max()<pd.Timedelta(days=90))
+        max_time_diff=rows_data['first_day_of_month'].diff().max()
+        min_time_diff = rows_data['first_day_of_month'].diff().min()
+        is_valid = len(rows_data)==self.seq_len and (len(rows_data['cfips'].unique())==1) and (max_time_diff<pd.Timedelta(days=90)) and (min_time_diff>pd.Timedelta(days=0))
 
         if not is_valid:
             ##Find a random item that is valid
@@ -52,9 +54,12 @@ class LstmDataset(Dataset):
 
         #Taking seq_len rows and considering the following features
         #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc, active,microbusiness_density
+        # features_tensor = torch.tensor(
+        #     rows_data[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc','year', 'active',
+        #                 'microbusiness_density']].values, dtype=torch.float32)
+
         features_tensor = torch.tensor(
-            rows_data[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc','year', 'active',
-                        'microbusiness_density']].values, dtype=torch.float32)
+            rows_data[['active','microbusiness_density']].values, dtype=torch.float32)  # Not considering the census features
 
         #return the iterator
         return features_tensor

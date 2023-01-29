@@ -8,7 +8,7 @@ from torch.optim import Adam
 
 from constants import EXPERIMENTS_DIR, DEVICE, N_CENSUS_FEATURES
 from dataset.census_features_dataset import CensusDataset
-from dataset.dataset import DatasetType
+from my_utils import DatasetType
 from logger import setup_logger
 from networks.features_autoencoder import FeaturesAENetwork
 from networks.network import CustomNetwork

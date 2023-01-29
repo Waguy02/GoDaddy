@@ -70,3 +70,10 @@ class Averager:
     def reset(self):
         self.current_total = 0.0
         self.iterations = 0.0
+
+
+from enum import Enum
+class DatasetType(Enum):
+    TRAIN="train"
+    VALID="valid"
+    TEST="test"

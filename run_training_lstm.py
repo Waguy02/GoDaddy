@@ -3,18 +3,16 @@ import logging
 import os
 
 import torch.utils.data
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torchmetrics import SymmetricMeanAbsolutePercentageError
 
 from constants import EXPERIMENTS_DIR, SEQ_LEN, SEQ_STRIDE, DEVICE
-from dataset.dataset import DatasetType
+from my_utils import DatasetType
 from dataset.lstm_dataset import LstmDataset
 from logger import setup_logger
-from networks.features_autoencoder import FeaturesAENetwork
+
 
 from networks.lstm_predictor import LstmPredictor
-from networks.network import CustomNetwork
-from training.trainer import Trainer
 from training.trainer_lstm import TrainerLstmPredictor
 
 
@@ -25,7 +23,7 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.05, help="Learning rate of Adam optimized")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.1, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
@@ -35,20 +33,23 @@ def cli():
     return parser.parse_args()
 
 def main(args):
-    model_name = "base_lstm_ae" if args.model_name is None else args.model_name
+    model_name = "base_lstm_no_census_no_ae" if args.model_name is None else args.model_name
 
     features_encoder = None
     # features_encoder = FeaturesAENetwork(experiment_dir=os.path.join(EXPERIMENTS_DIR, "base_features_ae")).to(DEVICE)
 
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
 
-    network=LstmPredictor(features_encoder=None, experiment_dir=experiment_dir).to(DEVICE)
-    # network = LstmPredictor(features_encoder=features_encoder, experiment_dir=experiment_dir).to(DEVICE)
+    network = LstmPredictor(features_encoder=features_encoder, experiment_dir=experiment_dir).to(DEVICE)
 
-    optimizer = Adam(network.parameters(), lr=args.learning_rate)
+    optimizer = SGD(network.parameters(), lr=args.learning_rate)
+
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
+
     loss_fn= SymmetricMeanAbsolutePercentageError().to(DEVICE)
+
     criterion= lambda y_pred,y_true: loss_fn(y_pred,y_true)*100
+
     logging.info("Training : "+model_name)
     trainer = TrainerLstmPredictor(network,
                       criterion,
