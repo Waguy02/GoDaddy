@@ -7,6 +7,7 @@ from torch.optim import Adam, SGD
 from torchmetrics import SymmetricMeanAbsolutePercentageError
 
 from constants import EXPERIMENTS_DIR, SEQ_LEN, SEQ_STRIDE, DEVICE
+from losses.smape import SmapeCriterion
 from my_utils import DatasetType
 from dataset.lstm_dataset import LstmDataset
 from logger import setup_logger
@@ -27,13 +28,13 @@ def cli():
     parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
-    parser.add_argument("--batch_size", "-bs", type=int, default=32, help="Batch size for training")
+    parser.add_argument("--batch_size", "-bs", type=int, default=512, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
     return parser.parse_args()
 
 def main(args):
-    model_name = "base_lstm_no_census_no_ae" if args.model_name is None else args.model_name
+    model_name = "base_lstm_no_ae" if args.model_name is None else args.model_name
 
     features_encoder = None
     # features_encoder = FeaturesAENetwork(experiment_dir=os.path.join(EXPERIMENTS_DIR, "base_features_ae")).to(DEVICE)
@@ -42,12 +43,12 @@ def main(args):
 
     network = LstmPredictor(features_encoder=features_encoder, experiment_dir=experiment_dir).to(DEVICE)
 
-    optimizer = SGD(network.parameters(), lr=args.learning_rate)
+    optimizer = Adam(network.parameters(), lr=args.learning_rate)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 
-    loss_fn= SymmetricMeanAbsolutePercentageError().to(DEVICE)
-    criterion= lambda y_pred,y_true: loss_fn(y_pred,y_true)*100
+    criterion= SmapeCriterion().to(DEVICE)
+
 
     logging.info("Training : "+model_name)
     trainer = TrainerLstmPredictor(network,

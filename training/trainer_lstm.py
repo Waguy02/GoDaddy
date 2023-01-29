@@ -112,7 +112,10 @@ class TrainerLstmPredictor:
                 """
                 # The density is the last item of the batch
                 y_true = batch[:,:,-1]
-                loss=self.loss_fn(y_pred[:,:-1],y_true[:,1:])
+
+                # nb_futures= min(train_dataloader.dataset.seq_len-1,3)
+                nb_futures=train_dataloader.dataset.seq_len-1
+                loss=self.loss_fn(y_pred[:,-1-nb_futures:-1],y_true[:,-nb_futures:])
 
                 """
                 3.Optimizing

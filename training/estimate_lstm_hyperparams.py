@@ -8,14 +8,15 @@ from torchmetrics import SymmetricMeanAbsolutePercentageError
 
 from constants import DEVICE, EXPERIMENTS_DIR
 from dataset.lstm_dataset import LstmDataset
+from losses.smape import SmapeCriterion
 from my_utils import DatasetType
 from networks.lstm_predictor import LstmPredictor
 from training.trainer_lstm import TrainerLstmPredictor
 
 ray.init()
 
-loss_fn= SymmetricMeanAbsolutePercentageError().to(DEVICE)
-criterion= lambda y_pred,y_true: loss_fn(y_pred,y_true)*100
+
+criterion= SmapeCriterion().to(DEVICE)
 
 
 def train_fn(config, experiment_dir = os.path.join(EXPERIMENTS_DIR,"base_lstm_no_ae")):
