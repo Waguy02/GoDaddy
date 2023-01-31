@@ -50,16 +50,17 @@ def train_fn(config, experiment_dir = os.path.join(EXPERIMENTS_DIR,"ray_tune")):
 
 
 if __name__ == '__main__':
-        tune.run(train_fn, config={"lr": tune.choice([1e-1, 5*1e-2, 1e-2, 5*1e-3, 1e-3]),
+        analysis = tune.run(train_fn, config={"lr": tune.choice([1e-1, 5*1e-2, 1e-2, 5*1e-3, 1e-3]),
                                "use_census": tune.choice([True, False]),
                                 "batch_size": tune.choice([32,256]),
                                 "hidden_dim": tune.choice([2, 4,6,8]),
                                 "seq_len": tune.choice([4, 5, 6])}
+                            ,max_concurrent_trials=2,
+                            resources_per_trial={"cpu": 4, "gpu": 1},
 
              )
 
-        best_config=tune.get_best_config(metric="loss", mode="min")
 
-        with open(os.path.join(EXPERIMENTS_DIR,"base_lstm_no_ae","best_hyper_config.json"), "w") as f:
-            json.dump(best_config, f, indent=4)
+
+
 

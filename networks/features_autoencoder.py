@@ -2,28 +2,26 @@ import logging
 import os
 import torch
 from torch import nn
-from constants import DEVICE, N_CENSUS_FEATURES, AE_LATENT_DIM
+from constants import DEVICE, N_CENSUS_FEATURES, AE_LATENT_DIM, N_COUNTY
 
 
 class FeaturesAENetwork(nn.Module):
-
     """
     The features are
     pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_income and the date
     Autoencoder network for features representation of the input data
-    T
-
     """
 
-    def __init__(self, experiment_dir="my_model", reset=False, load_best=True, input_dim=N_CENSUS_FEATURES, hidden_dim=AE_LATENT_DIM):
+    def __init__(self, experiment_dir="my_model", reset=False, load_best=True, input_dim=N_CENSUS_FEATURES + N_COUNTY,
+                 hidden_dim=AE_LATENT_DIM):
         super(FeaturesAENetwork, self).__init__()
         self.experiment_dir = experiment_dir
         self.model_name = os.path.basename(self.experiment_dir)
         self.reset = reset
         self.load_best = load_best
         self.setup_dirs()
-        self.input_dim=input_dim
-        self.hidden_dim=hidden_dim
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
         self.setup_network()
         if not reset: self.load_state()
 
@@ -34,22 +32,32 @@ class FeaturesAENetwork(nn.Module):
         @return:
         """
 
-        #1. Encoder
-        self.encoder=nn.Sequential(
-            nn.Linear(self.input_dim,4),
+        # 1. Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(self.input_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256, 64),
+            nn.ReLU(),
+            nn.Linear(64, self.hidden_dim, ))
+
+        # 2. Decoder
+        self.decoder_bone = nn.Sequential(
+            nn.Linear(self.hidden_dim, 64),
             nn.Sigmoid(),
-            nn.Linear(4,self.hidden_dim)) #Bottleneck
-
-
-        #2. Decoder
-        self.decoder=nn.Sequential(
-            nn.Linear(self.hidden_dim,4),
+            nn.BatchNorm1d(64),
+            nn.Linear(64, 256),
             nn.Sigmoid(),
-            nn.Linear(4,self.input_dim))
+        )
 
+        # Decoder for census one-hot encoded features
+        self.decoder_cfips = nn.Sequential(
+            nn.Linear(256, N_COUNTY),
+            nn.Softmax(dim=1),
+        )
 
-
-
+        ## Decoder for census continuous features
+        self.decoder_census = nn.Sequential(
+            nn.Linear(256, N_CENSUS_FEATURES))
 
     ##2. Model Saving/Loading
     def load_state(self, best=False):
@@ -73,8 +81,6 @@ class FeaturesAENetwork(nn.Module):
             torch.save(self.state_dict(), self.save_best_file)
         torch.save(self.state_dict(), self.save_file)
 
-
-
     ##3. Setupping directories for weights /logs ... etc
     def setup_dirs(self):
         """
@@ -86,30 +92,24 @@ class FeaturesAENetwork(nn.Module):
         if not os.path.exists(self.experiment_dir):
             os.makedirs(self.experiment_dir)
 
-
-
-
-    #4. Forward call
+    # 4. Forward call
     def forward(self, input):
         """
         Forward call here during training.
         Return the reconstructed input
         """
-        hidden_state=self.encoder(input)
-        x_hat=self.decoder(hidden_state)
-        return x_hat,hidden_state
+        hidden_state = self.encoder(input)
+        output = self.decoder_bone(hidden_state)
+        output_census = self.decoder_census(output)
+        output_cfips = self.decoder_cfips(output)
+        return hidden_state,  output_cfips, output_census
 
 
-    #5. Inference call (Just encoding)
-    def encode(self,input):
+    # 5. Inference call (Just encoding)
+    def encode(self, input):
         """
         Forward call here during inference.
         Return the hidden state
         """
-        hidden_state=self.encoder(input)
+        hidden_state = self.encoder(input)
         return hidden_state
-
-
-
-
-

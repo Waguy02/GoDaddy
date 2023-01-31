@@ -8,15 +8,20 @@ EXPERIMENTS_DIR=os.path.join(ROOT_DIR, "logs/experiments")
 use_cuda = torch .cuda.is_available()
 DEVICE = torch.device("cuda" if use_cuda else "cpu")
 
-N_CENSUS_FEATURES= 7
+
+N_CENSUS_FEATURES= 6 #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc, microbusiness_density
+#cfips is not considered as a feature we use a one-hot encoding for it
+
+
 USE_CENSUS= False #Without census features
 
-AE_LATENT_DIM= 2
+AE_LATENT_DIM= 32
 
-LSTM_HIDDEN_DIM = 4
+LSTM_HIDDEN_DIM = 8
 
 SEQ_LEN=6
 SEQ_STRIDE= 1
 
+N_COUNTY=3142
 
 FEATURES_AE_CENSUS_DIR=os.path.join(EXPERIMENTS_DIR, "base_features_ae")

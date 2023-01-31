@@ -24,28 +24,29 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
-    parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.05, help="Learning rate of Adam optimized")
+    parser.add_argument("--nb_epochs", "-e", type=int, default=100, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
-    parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
+    parser.add_argument("--batch_size", "-bs", type=int, default=512, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
-    parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
+    parser.add_argument("--use_census","-c",default=True,action='store_true',help="Use census data")
     return parser.parse_args()
 
 def main(args):
-    model_name = "base_lstm_no_ae_h3" if args.model_name is None else args.model_name
+    model_name = "base_lstm_seq_6_ae_h2_nh1" if args.model_name is None else args.model_name
 
 
 
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
 
-    network = LstmPredictor(experiment_dir=experiment_dir, hidden_dim=3, use_encoder=args.use_census).to(DEVICE)
+    network = LstmPredictor(experiment_dir=experiment_dir, hidden_dim=2, n_hidden_layers=1, use_encoder=args.use_census).to(DEVICE)
 
-    optimizer = Adam(network.parameters(), lr=args.learning_rate)
+    #Adam optimizer
+    optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 
     criterion= SmapeCriterion().to(DEVICE)
 

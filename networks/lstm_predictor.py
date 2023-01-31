@@ -11,13 +11,14 @@ from networks.features_autoencoder import FeaturesAENetwork
 class LstmPredictor(nn.Module):
 
     def __init__(self, hidden_dim=LSTM_HIDDEN_DIM,
+                 n_hidden_layers=1,
                  use_encoder=USE_CENSUS,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
         @param features_encoder :
         @param input_dim:
         @param hidden_dim:
-        @param ues_encoder:
+        @param ues_encoder:²
         @param experiment_dir:
         @param reset:
         @param load_best:
@@ -35,7 +36,7 @@ class LstmPredictor(nn.Module):
             self.input_dim =1
 
         self.hidden_dim = hidden_dim
-
+        self.n_hidden_layers = n_hidden_layers
         self.experiment_dir = experiment_dir
         self.model_name = os.path.basename(self.experiment_dir)
         self.reset = reset
@@ -52,7 +53,7 @@ class LstmPredictor(nn.Module):
         Initialize the network  architecture here
         @return:
         """
-        self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=1,batch_first=True)
+        self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=self.n_hidden_layers,batch_first=True)
 
         self.regressor=nn.Sequential(
             nn.Linear(self.hidden_dim,1)
@@ -107,8 +108,8 @@ class LstmPredictor(nn.Module):
         """
         #1. First apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
         if self.use_encoder:
-            encoded_features = self.features_encoder.encode(input[:, :, :N_CENSUS_FEATURES])
-            input = torch.cat((encoded_features, input[:, :, N_CENSUS_FEATURES:]), dim=-1)
+            encoded_features = self.features_encoder.encode(input[:, :, :self.features_encoder.input_dim])
+            input = torch.cat((encoded_features, input[:, :, self.features_encoder.input_dim:]), dim=-1)
 
         #2. Then apply the LSTM
         output, _ = self.lstm(input)

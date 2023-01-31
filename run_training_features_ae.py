@@ -6,7 +6,7 @@ import torch.utils.data
 from torch import nn
 from torch.optim import Adam
 
-from constants import EXPERIMENTS_DIR, DEVICE, N_CENSUS_FEATURES
+from constants import EXPERIMENTS_DIR, DEVICE, N_CENSUS_FEATURES, AE_LATENT_DIM
 from dataset.census_features_dataset import CensusDataset
 from my_utils import DatasetType
 from logger import setup_logger
@@ -23,7 +23,7 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=50, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
@@ -33,23 +33,34 @@ def cli():
     return parser.parse_args()
 
 def main(args):
-    model_name = "base_features_ae" if args.model_name is None else args.model_name
+    model_name = "features_ae_32_dims" if args.model_name is None else args.model_name
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
-    network=FeaturesAENetwork(experiment_dir=experiment_dir).to(DEVICE)
+    network=FeaturesAENetwork(
+                experiment_dir=experiment_dir,
+                hidden_dim=32).to(DEVICE)
     optimizer = Adam(network.parameters(), lr=args.learning_rate)
 
     #Cosine distance
 
-    criterion = lambda x, y: 1 - nn.functional.cosine_similarity(x, y, dim=1).mean()
+
+
+    #Loss function for features
+    criterion_features = lambda x, y: 1 - nn.functional.cosine_similarity(x, y, dim=1).mean()
+
+    #LOSS function for cfip
+    criterion_cfips = nn.CrossEntropyLoss(reduction='mean')
+
 
     logging.info("Training : "+model_name)
     trainer = TrainerFeaturesAE(network,
-                      criterion=criterion,
+                      criterion_cfips,
+                      criterion_features,
                       optimizer=optimizer,
-                      scheduler=None,
+                      scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, verbose=True),
                       nb_epochs= args.nb_epochs,
                       batch_size=args.batch_size,
                       reset=args.reset,
+
                       )
 
     train_dataset=CensusDataset(type=DatasetType.TRAIN)

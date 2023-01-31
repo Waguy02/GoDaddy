@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from constants import DEVICE
+from constants import DEVICE, N_COUNTY
 from my_utils import Averager
 
 
@@ -20,7 +20,8 @@ class TrainerFeaturesAE:
     Class to manage the training of the features autoencoder.
     """
     def __init__(self, network,
-                 criterion,
+                 criterion_cfips,
+                 crtierion_features,
                  optimizer,
                  scheduler=None,
                  nb_epochs=10, batch_size=128, reset=False):
@@ -36,7 +37,8 @@ class TrainerFeaturesAE:
         self.network = network
         self.batch_size = batch_size
 
-        self.criterion=criterion
+        self.criterion_cfips=criterion_cfips
+        self.criterion_features=crtierion_features
 
         self.optimizer = optimizer
         self.scheduler =scheduler if scheduler else\
@@ -90,6 +92,9 @@ class TrainerFeaturesAE:
             0. Initialize loss and other metrics
             """
             running_loss=Averager()
+            running_loss_cfips=Averager()
+            running_loss_features=Averager()
+
             pbar = tqdm(train_dataloader, desc=f"Epoch {epoch + 1}/{self.nb_epochs}")
             for _, batch in enumerate(pbar):
                 """
@@ -101,45 +106,52 @@ class TrainerFeaturesAE:
                 1.Forward pass and get the reconstruction loss
                 """
 
-                y,h=self.network(batch.to(DEVICE))
+                h,y_cfips,y_features=self.network(batch.to(DEVICE))
                 """
                 2.Loss computation and other metrics
                 """
-
-                loss= self.criterion(y, batch.to(DEVICE))
-                # Add L1 regularization to the loss
-                for param in self.network.parameters():
-                    loss += 1e-7 * torch.norm(param, 1)
-                """
-                
-                
+                loss_cfips   = self.criterion_cfips(batch[:,:N_COUNTY].to(DEVICE),y_cfips)/self.batch_size
+                loss_features= self.criterion_features(batch[:,N_COUNTY:].to(DEVICE),y_features)
+                # loss=loss_cfips+loss_features
+                loss=loss_cfips
+                """                
                 3.Optimizing
                 """
                 loss.backward()
                 loss.cpu()
 
                 self.optimizer.step()
+
+                running_loss_cfips.send(loss_cfips.item())
+                running_loss_features.send(loss_features.item())
                 running_loss.send(loss.item())
                 """
                 
-                
+        
                 
                 4.Writing logs and tensorboard data, loss and other metrics
                 """
-                self.summary_writer.add_scalar("Step_train/loss", loss.item(), itr)
-                pbar.set_postfix(current_loss=loss.item(), running_loss=running_loss.value)
-            epoch_val_loss =self.eval(val_dataloader,epoch)
+                self.summary_writer.add_scalar("Train/loss", loss.item(), itr)
+                self.summary_writer.add_scalar("Train/loss_cfips", loss_cfips.item(), itr)
+                self.summary_writer.add_scalar("Train/loss_features", loss_features.item(), itr)
+
+                pbar.set_postfix(loss=running_loss.value,loss_cfips=running_loss_cfips.value,loss_features=running_loss_features.value)
+
+            epoch_val_loss ,epoch_val_loss_cfips,epoch_val_loss_features=self.evaluate(val_dataloader,epoch)
 
 
-            infos = {
-                "hidden_dim": self.network.hidden_dim,
-                "input_dim": self.network.input_dim,
-                "epoch": epoch,
-                "train_loss":running_loss.value,
-                "val_loss":epoch_val_loss.value,
-                "lr": self.optimizer.param_groups[0]['lr']
-            }
-            logging.info("Epoch {} : train_loss = {}, val_loss = {}".format(epoch, running_loss.value, epoch_val_loss.value))
+            infos={"epoch": epoch,
+                "lr": self.optimizer.param_groups[0]['lr'],
+                "val_loss": epoch_val_loss.value,
+                "val_loss_cfips": epoch_val_loss_cfips.value,
+                "val_loss_features": epoch_val_loss_features.value,
+                "train_loss": running_loss.value,
+                "train_loss_cfips": running_loss_cfips.value,
+                "train_loss_features": running_loss_features.value,
+                "hidden_dim": self.network.hidden_dim
+             }
+            #Print all the metrics
+            logging.info("Epoch {} : train_loss = {:.4f} ,train_loss_cfips = {:.4f} ,train_loss_features = {:.4f} ,val_loss = {:.4f} ,val_loss_cfips = {:.4f} ,val_loss_features = {:.4f}".format(epoch,running_loss.value,running_loss_cfips.value,running_loss_features.value,epoch_val_loss.value,epoch_val_loss_cfips.value,epoch_val_loss_features.value))
 
             if running_loss.value < best_loss:
                 best_loss = running_loss.value
@@ -152,43 +164,49 @@ class TrainerFeaturesAE:
 
             ##Displaying the metrics : epoch_train_loss, epoch_val_loss, sparsity_eval_score using summary_writer
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
+            self.summary_writer.add_scalar("Epoch_train/loss_cfips", running_loss_cfips.value, epoch)
+            self.summary_writer.add_scalar("Epoch_train/loss_features", running_loss_features.value, epoch)
             self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
+            self.summary_writer.add_scalar("Epoch_val/loss_cfips", epoch_val_loss_cfips.value, epoch)
+            self.summary_writer.add_scalar("Epoch_val/loss_features", epoch_val_loss_features.value, epoch)
 
 
 
-
-    def eval(self, val_dataloader,epoch):
+    def evaluate(self, val_dataloader,epoch):
         """
         Compute loss and metrics on a validation dataloader
         @return:
         """
         with torch.no_grad():
+
             self.network.eval()
             running_loss=Averager()
-            for _, batch in enumerate(tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")):
+            running_loss_cfips=Averager()
+            running_loss_features=Averager()
+
+            pbar= tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")
+            for _, batch in enumerate(pbar):
                 """
                 Training lopp
                 """
                 """
                 1.Forward pass
                 """
-
-                y,h = self.network(batch.to(DEVICE))
-                """ 
+                h,y_cfips,y_features=self.network(batch.to(DEVICE))
+                """
                 2.Loss computation and other metrics
                 """
+                loss_cfips   = self.criterion_cfips(batch[:,:N_COUNTY].to(DEVICE),y_cfips)/self.batch_size
+                loss_features= self.criterion_features(batch[:,N_COUNTY:].to(DEVICE),y_features)
+                loss=loss_cfips+loss_features
 
-                loss =  self.criterion(y, batch.to(DEVICE))
-                # Add L1 regularization to the loss
-                for param in self.network.parameters():
-                    loss += 1e-7 * torch.norm(param, 1)
+                running_loss_cfips.send(loss_cfips.item())
+                running_loss_features.send(loss_features.item())
+                running_loss.send(loss.item())
 
-                running_loss.send(loss.cpu().item())
+                pbar.set_postfix(loss=running_loss.value, loss_cfips=running_loss_cfips.value,
+                                 loss_features=running_loss_features.value)
 
-
-
-
-
-        return running_loss
+        return running_loss,running_loss_cfips,running_loss_features
 
 

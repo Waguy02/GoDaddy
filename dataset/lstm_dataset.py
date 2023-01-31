@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS
 from my_utils import DatasetType
 
+TRAIN_END_DATE = ""
+
 
 class LstmDataset(Dataset):
     def __init__(self, type, seq_len, stride=1,use_census=USE_CENSUS):
@@ -16,6 +18,7 @@ class LstmDataset(Dataset):
         self.use_census = use_census
         self.file = os.path.join(DATA_DIR, f"train_with_census_{'train' if type==DatasetType.TRAIN else 'val' if type==DatasetType.VALID  else 'test'}.csv")
         self.load_data()
+
 
     def init_transforms(self):
         """
@@ -62,10 +65,16 @@ class LstmDataset(Dataset):
             features_tensor[:,0]=features_tensor[:,0]/1000
             features_tensor[:,6]=features_tensor[:,6]/1000
 
+
+
+            # noramlize the microbusiness_density max=3
+            features_tensor[:, 0] = features_tensor[:, 0] / 3
         else :
             features_tensor = torch.tensor(
                 rows_data[['microbusiness_density']].values, dtype=torch.float32)  # Not considering the census features
 
+            # noramlize the microbusiness_density max=3
+            features_tensor[:,0]=features_tensor[:,0]/3
         #return the iterator
         return features_tensor
 

@@ -115,8 +115,8 @@ class TrainerLstmPredictor:
                 # The density is the last item of the batch
                 y_true = batch[:,:,-1]
 
-                nb_futures= min(train_dataloader.dataset.seq_len-1,3)
-                # nb_futures=train_dataloader.dataset.seq_len-1
+                # nb_futures= min(train_dataloader.dataset.seq_len-1,3)
+                nb_futures=train_dataloader.dataset.seq_len-1
                 loss=self.loss_fn(y_pred[:,-1-nb_futures:-1],y_true[:,-nb_futures:])
 
                 """
@@ -150,6 +150,7 @@ class TrainerLstmPredictor:
             infos["hidden_dim"]=self.network.hidden_dim
             infos["input_dim"]=self.network.input_dim
             infos["use_census"]=self.network.use_encoder
+            infos["n_hidden_layers"]=self.network.n_hidden_layers
 
             if epoch_val_loss.value < self.best_val_loss:
                 self.best_val_loss = epoch_val_loss.value
@@ -186,7 +187,7 @@ class TrainerLstmPredictor:
                 """
                 y_true = batch[:,:,-1]
                 nb_futures = min(val_dataloader.dataset.seq_len - 1, 3)
-                # nb_futures=train_dataloader.dataset.seq_len-1
+                # nb_futures=val_dataloader.dataset.seq_len
                 loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
 
                 running_loss.send(loss.item())
