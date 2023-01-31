@@ -93,7 +93,7 @@ class LstmDataset(Dataset):
                 df = self.main_df[self.main_df['first_day_of_month'] >= TEST_START_DATE]
 
 
-            for i in tqdm(range(0, len(df)), desc="Preparing sequences of dataset of type {}".format("eval" if self.type == DatasetType.VALID else "test")):
+            for i in tqdm(range(0, len(df),self.stride), desc="Preparing sequences of dataset of type {}".format("eval" if self.type == DatasetType.VALID else "test")):
                 ## In eval and test sequences, the step to predict should always be the last one of the sequence
 
                 ##Find the offest of the start in the main df
