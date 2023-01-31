@@ -132,8 +132,8 @@ class TrainerLstmPredictor:
                 """
                 4.Writing logs and tensorboard data, loss and other metrics
                 """
-                self.summary_writer.add_scalar("step_Train/loss", loss.item(), itr)
-
+                self.summary_writer.add_scalar("Train/loss", loss.item(), itr)
+                break#TODO-REMOVE
 
 
             epoch_val_loss =self.eval(val_dataloader,epoch)
@@ -142,15 +142,18 @@ class TrainerLstmPredictor:
                 "epoch": epoch,
                 "train_loss":running_loss.value,
                 "val_loss":epoch_val_loss.value,
-                "lr": self.optimizer.param_groups[0]['lr']
+                "lr": self.optimizer.param_groups[0]['lr'],
+                "input_dim": self.network.input_dim,
+                "hidden_dim": self.network.hidden_dim,
+                "n_hidden_lstm_layers": self.network.n_hidden_layers,
+                "seq_len": train_dataloader.dataset.seq_len,
+                "batch_size": train_dataloader.batch_size,
+                "stride": train_dataloader.dataset.stride,
+                "use_census": self.network.use_encoder,
+                "census_dim": -1 if not self.network.use_encoder else self.network.features_encoder.hidden_dim
             }
 
             logging.info("Epoch {} - Train loss: {:.4f} - Val loss: {:.4f}".format(epoch, running_loss.value, epoch_val_loss.value))
-
-            infos["hidden_dim"]=self.network.hidden_dim
-            infos["input_dim"]=self.network.input_dim
-            infos["use_census"]=self.network.use_encoder
-            infos["n_hidden_layers"]=self.network.n_hidden_layers
 
             if epoch_val_loss.value < self.best_val_loss:
                 self.best_val_loss = epoch_val_loss.value
@@ -160,9 +163,10 @@ class TrainerLstmPredictor:
             self.network.save_state(best=best)
             self.save_model_info(infos, best=best)
             self.scheduler.step(epoch_val_loss.value)
-            self.summary_writer.add_scalar("epoch_train/loss", running_loss.value, epoch)
-            self.summary_writer.add_scalar("epoch_val/loss", epoch_val_loss.value, epoch)
+            self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
+            self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
 
+            break  # TODO-REMOVE
 
     def eval(self, val_dataloader,epoch):
         """
@@ -186,13 +190,50 @@ class TrainerLstmPredictor:
                 2.Loss computation and other metrics
                 """
                 y_true = batch[:,:,-1]
-                nb_futures = min(val_dataloader.dataset.seq_len - 1, 3)
-                # nb_futures=val_dataloader.dataset.seq_len
+                nb_futures=val_dataloader.dataset.seq_len-1
                 loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
 
                 running_loss.send(loss.item())
 
+                break  # TODO-REMOVE
 
         return running_loss
 
+
+
+    def run_test(self, test_dataloader):
+        """
+        Compute loss and metrics on a validation dataloader
+        @return:
+        """
+        predictions = []
+        with torch.no_grad():
+            self.network.eval()
+            for _, batch in enumerate(tqdm(test_dataloader," Running tests for submission")):
+                batch = batch.to(DEVICE)
+                y_pred = self.network(batch).cpu()[:,-1:]
+                """ 
+                2.Loss computation and other metrics
+                """
+                predictions.append(y_pred.numpy())
+
+
+        #Merge predictions
+        predictions=np.squeeze(np.concatenate(predictions,axis=0))
+
+
+        #Update all microbusiness_denisty column
+
+        pred_test_df = pd.DataFrame(
+            {
+                "row_id":test_dataloader.dataset.test_df["row_id"].values,
+                 "cfips":test_dataloader.dataset.test_df["cfips"].values,
+                "first_day_of_month":test_dataloader.dataset.test_df["first_day_of_month"].values,
+                "microbusiness_density":predictions}
+
+                                )
+
+        pred_test_df.to_csv(os.path.join(self.experiment_dir,"submission.csv"),index=False)
+
+        return pred_test_df
 

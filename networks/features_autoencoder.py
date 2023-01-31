@@ -2,7 +2,7 @@ import logging
 import os
 import torch
 from torch import nn
-from constants import DEVICE, N_CENSUS_FEATURES, AE_LATENT_DIM, N_COUNTY
+from constants import DEVICE, N_CENSUS_FEATURES, AE_LATENT_DIM, N_COUNTY, N_DIMS_COUNTY_ENCODING
 
 
 class FeaturesAENetwork(nn.Module):
@@ -12,7 +12,7 @@ class FeaturesAENetwork(nn.Module):
     Autoencoder network for features representation of the input data
     """
 
-    def __init__(self, experiment_dir="my_model", reset=False, load_best=True, input_dim=N_CENSUS_FEATURES + N_COUNTY,
+    def __init__(self, experiment_dir="my_model", reset=False, load_best=False, input_dim=N_CENSUS_FEATURES + N_DIMS_COUNTY_ENCODING,
                  hidden_dim=AE_LATENT_DIM):
         super(FeaturesAENetwork, self).__init__()
         self.experiment_dir = experiment_dir
@@ -33,31 +33,35 @@ class FeaturesAENetwork(nn.Module):
         """
 
         # 1. Encoder
+
         self.encoder = nn.Sequential(
-            nn.Linear(self.input_dim, 256),
+            nn.Linear(self.input_dim,12),
             nn.ReLU(),
-            nn.Linear(256, 64),
+            nn.Linear(12, 12),
             nn.ReLU(),
-            nn.Linear(64, self.hidden_dim, ))
+            nn.Linear(12, self.hidden_dim),
+            nn.ReLU(),
+        )
+
 
         # 2. Decoder
         self.decoder_bone = nn.Sequential(
-            nn.Linear(self.hidden_dim, 64),
+            nn.Linear(self.hidden_dim, 12),
             nn.Sigmoid(),
-            nn.BatchNorm1d(64),
-            nn.Linear(64, 256),
+            nn.Linear(12, 12),
             nn.Sigmoid(),
         )
 
         # Decoder for census one-hot encoded features
         self.decoder_cfips = nn.Sequential(
-            nn.Linear(256, N_COUNTY),
-            nn.Softmax(dim=1),
+            nn.Linear(12, N_DIMS_COUNTY_ENCODING),
+            nn.Sigmoid()
         )
 
         ## Decoder for census continuous features
         self.decoder_census = nn.Sequential(
-            nn.Linear(256, N_CENSUS_FEATURES))
+            nn.Linear(12, N_CENSUS_FEATURES),
+            )
 
     ##2. Model Saving/Loading
     def load_state(self, best=False):
@@ -99,10 +103,16 @@ class FeaturesAENetwork(nn.Module):
         Return the reconstructed input
         """
         hidden_state = self.encoder(input)
+        output = self.decode(hidden_state)
+        return hidden_state, output
+
+
+    def decode(self,hidden_state):
         output = self.decoder_bone(hidden_state)
         output_census = self.decoder_census(output)
         output_cfips = self.decoder_cfips(output)
-        return hidden_state,  output_cfips, output_census
+        output= torch.cat((output_cfips,output_census),1)
+        return output
 
 
     # 5. Inference call (Just encoding)
@@ -111,5 +121,5 @@ class FeaturesAENetwork(nn.Module):
         Forward call here during inference.
         Return the hidden state
         """
-        hidden_state = self.encoder(input)
-        return hidden_state
+        return self.encoder(input)
+

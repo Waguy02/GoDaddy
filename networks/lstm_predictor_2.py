@@ -6,9 +6,10 @@ from torch import nn
 from constants import ROOT_DIR, DEVICE, AE_LATENT_DIM, LSTM_HIDDEN_DIM, N_CENSUS_FEATURES, USE_CENSUS, EXPERIMENTS_DIR, \
     FEATURES_AE_CENSUS_DIR
 from networks.features_autoencoder import FeaturesAENetwork
+from networks.lstm_predictor import LstmPredictor
 
 
-class LstmPredictor2(nn.Module):
+class LstmPredictor2(LstmPredictor):
     """
     Lstm Predictor that do not directly incorporate census but only on the regression part
     """
@@ -26,31 +27,13 @@ class LstmPredictor2(nn.Module):
         @param load_best:
         """
 
-        super(LstmPredictor2, self).__init__()
+        super(LstmPredictor2, self).__init__(hidden_dim=hidden_dim,
+                                             n_hidden_layers=n_hidden_layers,
+                                             use_encoder=use_encoder,
+                                             experiment_dir=experiment_dir,
+                                             reset=reset,
+                                             load_best=load_best)
 
-
-        self.use_encoder = use_encoder
-        self.input_dim = 1
-        self.hidden_dim = hidden_dim
-        if self.use_encoder:
-            self.features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,load_best=True).to(DEVICE)
-            self.regressor_dim = self.features_encoder.hidden_dim  + self.hidden_dim
-        else :
-            self.features_encoder = None
-            self.regressor_dim = self.hidden_dim
-
-
-
-        self.n_hidden_layers = n_hidden_layers
-        self.experiment_dir = experiment_dir
-        self.model_name = os.path.basename(self.experiment_dir)
-        self.reset = reset
-        self.load_best = load_best
-        self.setup_dirs()
-        self.setup_network()
-
-
-        if not reset: self.load_state()
 
     ##1. Defining network architecture
     def setup_network(self):
@@ -58,6 +41,10 @@ class LstmPredictor2(nn.Module):
         Initialize the network  architecture here
         @return:
         """
+        self.input_dim = 1
+
+        self.regressor_dim = self.hidden_dim + (0 if not self.use_encoder else self.features_encoder.hidden_dim)
+
         self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=self.n_hidden_layers,batch_first=True)
 
         self.regressor=nn.Sequential(
@@ -74,38 +61,8 @@ class LstmPredictor2(nn.Module):
                 param.requires_grad = False
 
 
-    ##2. Model Saving/Loading
-    def load_state(self, best=False):
-        """
-        Load model
-        :param self:
-        :return:
-        """
-        if best and os.path.exists(self.save_best_file):
-            logging.info(f"Loading best model state : {self.save_file}")
-            self.load_state_dict(torch.load(self.save_file, map_location=DEVICE))
-            return
 
-        if os.path.exists(self.save_file):
-            logging.info(f"Loading model state : {self.save_file}")
-            self.load_state_dict(torch.load(self.save_file, map_location=DEVICE))
 
-    def save_state(self, best=False):
-        if best:
-            logging.info("Saving best model")
-            torch.save(self.state_dict(), self.save_best_file)
-        torch.save(self.state_dict(), self.save_file)
-
-    ##3. Setupping directories for weights /logs ... etc
-    def setup_dirs(self):
-        """
-        Checking and creating directories for weights storage
-        @return:
-        """
-        self.save_file = os.path.join(self.experiment_dir, f"{self.model_name}.pt")
-        self.save_best_file = os.path.join(self.experiment_dir, f"{self.model_name}_best.pt")
-        if not os.path.exists(self.experiment_dir):
-            os.makedirs(self.experiment_dir)
 
     #4. Forward call
     def forward(self, input):

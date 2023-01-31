@@ -24,7 +24,7 @@ def cli():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
-    parser.add_argument("--nb_epochs", "-e", type=int, default=50, help="Number of epochs for training")
+    parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=64, help="Batch size for training")
@@ -33,22 +33,21 @@ def cli():
     return parser.parse_args()
 
 def main(args):
-    model_name = "features_ae_32_dims" if args.model_name is None else args.model_name
+    model_name = "features_ae_4_dims" if args.model_name is None else args.model_name
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
     network=FeaturesAENetwork(
+                load_best=False,
+                reset=args.reset,
                 experiment_dir=experiment_dir,
-                hidden_dim=32).to(DEVICE)
+                hidden_dim=4).to(DEVICE)
+
     optimizer = Adam(network.parameters(), lr=args.learning_rate)
 
-    #Cosine distance
+    #LOSS function for cfip : hinge loss
+    criterion_cfips = nn.CrossEntropyLoss()
 
-
-
-    #Loss function for features
-    criterion_features = lambda x, y: 1 - nn.functional.cosine_similarity(x, y, dim=1).mean()
-
-    #LOSS function for cfip
-    criterion_cfips = nn.CrossEntropyLoss(reduction='mean')
+    #LOSS function for features(MSE)
+    criterion_features = nn.MSELoss()
 
 
     logging.info("Training : "+model_name)
@@ -63,9 +62,9 @@ def main(args):
 
                       )
 
-    train_dataset=CensusDataset(type=DatasetType.TRAIN)
-    val_dataset=CensusDataset(type=DatasetType.TRAIN)
 
+    train_dataset=CensusDataset(type=DatasetType.TRAIN)
+    val_dataset=CensusDataset(type=DatasetType.VALID)
 
     train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=args.num_workers)

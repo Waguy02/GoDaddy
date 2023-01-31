@@ -49,7 +49,6 @@ class CensusDataset(Dataset):
         """
         row=self.data.iloc[idx]
         features_tensor =extract_census_features(row, self.cfips_index)
-
         return features_tensor
 
 
