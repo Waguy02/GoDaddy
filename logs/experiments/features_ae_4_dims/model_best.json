@@ -1,0 +1,11 @@
+{
+    "epoch": 9,
+    "lr": 0.01,
+    "val_loss": 0.00908339511603117,
+    "val_loss_cfips": 0.0013613551389425993,
+    "val_loss_features": 0.007722039995715022,
+    "train_loss": 0.08055538614162333,
+    "train_loss_cfips": 0.0015018707682581873,
+    "train_loss_features": 0.007905351496797981,
+    "hidden_dim": 4
+}
