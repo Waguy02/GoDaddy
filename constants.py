@@ -27,7 +27,7 @@ SEQ_STRIDE= 1
 N_COUNTY=3142
 N_DIMS_COUNTY_ENCODING= np.ceil(np.log2(N_COUNTY)).astype(int) #Number of bits needed to encode a county
 
-FEATURES_AE_CENSUS_DIR=os.path.join(EXPERIMENTS_DIR, "features_ae_4_dims")
+FEATURES_AE_CENSUS_DIR=os.path.join(EXPERIMENTS_DIR, "features_ae_2_dims")
 
 
 TRAIN_FILE= os.path.join(DATA_DIR, "train.csv")

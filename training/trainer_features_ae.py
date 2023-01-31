@@ -149,7 +149,8 @@ class TrainerFeaturesAE:
                 "val_loss_features": epoch_val_loss_features.value,
                 "train_loss": running_loss.value,
                 "train_loss_cfips": running_loss_cfips.value,
-                "train_loss_features": running_loss_features.value
+                "train_loss_features": running_loss_features.value,
+               "hidden_dim":self.network.hidden_dim,
 
              }
             #Print all the metrics
