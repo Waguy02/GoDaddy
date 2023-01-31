@@ -40,8 +40,9 @@ def main(args):
 
     #Format the model name
 
+    variante = "v0" if args.variante==0 else "v1"
     if args.model_name is None:
-        model_name = f"lstm_{'ae_' if args.use_census else ''}hd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
+        model_name = f"lstm_{variante}_{'ae_' if args.use_census else ''}hd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
     else :
         model_name=args.model_name
 

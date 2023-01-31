@@ -150,6 +150,7 @@ class TrainerLstmPredictor:
                 "batch_size": train_dataloader.batch_size,
                 "stride": train_dataloader.dataset.stride,
                 "use_census": self.network.use_encoder,
+                "variante": self.network.variante_num,
                 "census_dim": -1 if not self.network.use_encoder else self.network.features_encoder.hidden_dim
             }
 

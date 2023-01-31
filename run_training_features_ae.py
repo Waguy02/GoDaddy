@@ -23,7 +23,7 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
@@ -33,13 +33,13 @@ def cli():
     return parser.parse_args()
 
 def main(args):
-    model_name = "features_ae_4_dims" if args.model_name is None else args.model_name
+    model_name = "features_ae_2_dims" if args.model_name is None else args.model_name
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
     network=FeaturesAENetwork(
                 load_best=False,
                 reset=args.reset,
                 experiment_dir=experiment_dir,
-                hidden_dim=4).to(DEVICE)
+                hidden_dim=2).to(DEVICE)
 
     optimizer = Adam(network.parameters(), lr=args.learning_rate)
 
