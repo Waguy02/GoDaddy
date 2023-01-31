@@ -176,7 +176,8 @@ class TrainerLstmPredictor:
         with torch.no_grad():
             self.network.eval()
             running_loss=Averager()
-            for _, batch in enumerate(tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")):
+            pbar = tqdm(val_dataloader, desc=f"Epoch {epoch + 1}/{self.nb_epochs}")
+            for _, batch in enumerate(pbar):
 
                 """
                 Training lopp
@@ -195,7 +196,7 @@ class TrainerLstmPredictor:
 
                 running_loss.send(loss.item())
 
-
+                pbar.set_postfix(current_loss=loss.item(), current_mean_loss=running_loss.value)
 
         return running_loss
 

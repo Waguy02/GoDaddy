@@ -76,6 +76,10 @@ def main(args):
     val_dataset=LstmDataset(type=DatasetType.VALID,seq_len=args.seq_len,stride=args.seq_len,use_census=args.use_census)
     test_dataset=LstmDataset(type=DatasetType.TEST,seq_len=args.seq_len,stride=args.seq_len,use_census=args.use_census)
 
+    logging.info("Train dataset size : "+str(len(train_dataset)))
+    logging.info("Val dataset size : "+str(len(val_dataset)))
+    logging.info("Test dataset size : "+str(len(test_dataset)))
+
     train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=args.num_workers,drop_last=False)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,num_workers=args.num_workers,drop_last=False,shuffle=False)
