@@ -160,9 +160,11 @@ class TrainerLstmPredictor:
                 best = True
             else:
                 best = False
+
             self.network.save_state(best=best)
             self.save_model_info(infos, best=best)
             self.scheduler.step(epoch_val_loss.value)
+
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
             self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
 
