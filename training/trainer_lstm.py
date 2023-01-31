@@ -133,7 +133,7 @@ class TrainerLstmPredictor:
                 4.Writing logs and tensorboard data, loss and other metrics
                 """
                 self.summary_writer.add_scalar("Train/loss", loss.item(), itr)
-                break#TODO-REMOVE
+
 
 
             epoch_val_loss =self.eval(val_dataloader,epoch)
@@ -166,7 +166,7 @@ class TrainerLstmPredictor:
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
             self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
 
-            break  # TODO-REMOVE
+
 
     def eval(self, val_dataloader,epoch):
         """
@@ -195,7 +195,7 @@ class TrainerLstmPredictor:
 
                 running_loss.send(loss.item())
 
-                break  # TODO-REMOVE
+
 
         return running_loss
 
