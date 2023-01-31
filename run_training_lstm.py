@@ -20,11 +20,11 @@ def cli():
    @return:
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
+    parser.add_argument("--reset", "-r", action='store_true', default=False, help="Start retraining the model from scratch")
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.05, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=100, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
-    parser.add_argument("--num_workers", "-w", type=int, default=4, help="Number of workers for data loading")
+    parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=512, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
@@ -41,7 +41,7 @@ def main(args):
     #Format the model name
 
     if args.model_name is None:
-        model_name = f"lstm_hd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
+        model_name = f"lstm_{'ae_' if args.use_census else ''}hd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
     else :
         model_name=args.model_name
 

@@ -148,6 +148,7 @@ class TrainerFeaturesAE:
                 "val_loss_cfips": epoch_val_loss_cfips.value,
                 "val_loss_features": epoch_val_loss_features.value,
                 "train_loss": running_loss.value,
+                "variante": self.network.variante_num,
                 "train_loss_cfips": running_loss_cfips.value,
                 "train_loss_features": running_loss_features.value
 

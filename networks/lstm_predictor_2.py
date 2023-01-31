@@ -34,6 +34,7 @@ class LstmPredictor2(LstmPredictor):
                                              reset=reset,
                                              load_best=load_best)
 
+        self.variante_num=2
 
     ##1. Defining network architecture
     def setup_network(self):
@@ -43,22 +44,22 @@ class LstmPredictor2(LstmPredictor):
         """
         self.input_dim = 1
 
+        if self.use_encoder:
+            # Freeze the encoder weights
+            for param in self.features_encoder.parameters():
+                param.requires_grad = False
+
+
         self.regressor_dim = self.hidden_dim + (0 if not self.use_encoder else self.features_encoder.hidden_dim)
 
         self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=self.n_hidden_layers,batch_first=True)
 
         self.regressor=nn.Sequential(
             nn.Linear(self.regressor_dim, 8),
-            nn.LayerNorm(8),
-            nn.Tanh(),
+            nn.Sigmoid(),
             nn.Linear(8, 1))
 
 
-
-        if self.use_encoder:
-            # Freeze the encoder weights
-            for param in self.features_encoder.parameters():
-                param.requires_grad = False
 
 
 

@@ -27,6 +27,7 @@ class LstmPredictor(nn.Module):
 
         super(LstmPredictor, self).__init__()
 
+        self.variante_num=0
 
         self.use_encoder = use_encoder
         if self.use_encoder:
