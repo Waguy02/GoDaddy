@@ -178,7 +178,7 @@ class TrainerLstmPredictor:
         with torch.no_grad():
             self.network.eval()
             running_loss=Averager()
-            pbar = tqdm(val_dataloader, desc=f"Epoch {epoch + 1}/{self.nb_epochs}")
+            pbar = tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")
             for _, batch in enumerate(pbar):
 
                 """

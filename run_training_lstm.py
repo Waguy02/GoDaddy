@@ -24,7 +24,7 @@ def cli():
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.05, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=100, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
-    parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
+    parser.add_argument("--num_workers", "-w", type=int, default=4, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=512, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
@@ -76,11 +76,11 @@ def main(args):
     val_dataset=LstmDataset(type=DatasetType.VALID,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
     test_dataset=LstmDataset(type=DatasetType.TEST,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
 
-    logging(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
+    logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
     train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=args.num_workers,drop_last=False)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,num_workers=args.num_workers,drop_last=False,shuffle=False)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False,shuffle=False)
 
     ##Train
     trainer.fit(train_dataloader,val_dataloader)
