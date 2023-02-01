@@ -167,8 +167,10 @@ class TrainerLstmPredictor:
             self.network.save_state(best=best)
             self.save_model_info(infos, best=best)
 
-             #No wanings
-            with warnings.catch_warnings():
+             # if scheduler is StepLR
+            if isinstance(self.scheduler, torch.optim.lr_scheduler.StepLR):
+                self.scheduler.step()
+            else:
                 self.scheduler.step(epoch_val_loss.value)
 
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)

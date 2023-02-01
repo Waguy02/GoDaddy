@@ -59,7 +59,6 @@ def main(args):
                       nb_epochs= args.nb_epochs,
                       batch_size=args.batch_size,
                       reset=args.reset,
-
                       )
 
 

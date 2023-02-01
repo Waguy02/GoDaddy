@@ -53,7 +53,7 @@ def main(args):
 
     NetworkClass = LstmPredictor if args.variante==0 else LstmPredictor2
 
-    network = NetworkClass(experiment_dir=experiment_dir, hidden_dim=4, n_hidden_layers=1, use_encoder=args.use_census).to(DEVICE)
+    network = NetworkClass(experiment_dir=experiment_dir, hidden_dim=4, n_hidden_layers=1, use_encoder=args.use_census,reset= args.reset).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
