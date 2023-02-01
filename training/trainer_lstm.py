@@ -136,6 +136,7 @@ class TrainerLstmPredictor:
                 """
                 self.summary_writer.add_scalar("Train/loss", loss.item(), itr)
 
+                self.scheduler.step(loss.item())
 
 
             epoch_val_loss =self.eval(val_dataloader,epoch)
@@ -168,10 +169,10 @@ class TrainerLstmPredictor:
             self.save_model_info(infos, best=best)
 
              # if scheduler is StepLR
-            if isinstance(self.scheduler, torch.optim.lr_scheduler.StepLR):
-                self.scheduler.step()
-            else:
-                self.scheduler.step(epoch_val_loss.value)
+            # if isinstance(self.scheduler, torch.optim.lr_scheduler.StepLR):
+            #     self.scheduler.step()
+            # else:
+            #     self.scheduler.step(epoch_val_loss.value)
 
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
             self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)

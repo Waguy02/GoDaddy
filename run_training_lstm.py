@@ -1,10 +1,11 @@
 import argparse
 import logging
 import os
+import pickle
 
 import torch.utils.data
 
-from constants import EXPERIMENTS_DIR, SEQ_LEN, SEQ_STRIDE, DEVICE
+from constants import EXPERIMENTS_DIR, SEQ_LEN, SEQ_STRIDE, DEVICE, ROOT_DIR
 from losses.smape import SmapeCriterion
 from my_utils import DatasetType
 from dataset.lstm_dataset import LstmDataset
@@ -22,7 +23,7 @@ def cli():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False, help="Start retraining the model from scratch")
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
-    parser.add_argument("--nb_epochs", "-e", type=int, default=100, help="Number of epochs for training")
+    parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=512, help="Batch size for training")
@@ -58,7 +59,7 @@ def main(args):
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=100, factor=0.5, verbose=True)
 
     criterion= SmapeCriterion().to(DEVICE)
 
@@ -73,9 +74,32 @@ def main(args):
                       reset=args.reset,
                       )
 
-    train_dataset=LstmDataset(type=DatasetType.TRAIN,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
-    val_dataset=LstmDataset(type=DatasetType.VALID,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
-    test_dataset=LstmDataset(type=DatasetType.TEST,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
+    # Save  the dataset according to type, seq_len_stride and use_census: using pickle
+    train_dataset_pickle_path = os.path.join(ROOT_DIR,"dataset","pickle"
+                                             f"train_dataset_{args.seq_len}_{args.seq_stride}_{args.use_census}.pickle")
+    val_dataset_pickle_path = os.path.join(ROOT_DIR,"dataset","pickle"
+                                           f"val_dataset_{args.seq_len}_{args.seq_stride}_{args.use_census}.pickle")
+    test_dataset_pickle_path = os.path.join(ROOT_DIR,"dataset","pickle"
+                                            f"test_dataset_{args.seq_len}_{args.seq_stride}_{args.use_census}.pickle")
+
+    #If some of the dataset is not saved, we create it
+    if not os.path.exists(train_dataset_pickle_path) or not os.path.exists(val_dataset_pickle_path) or not os.path.exists(test_dataset_pickle_path):
+        train_dataset=LstmDataset(type=DatasetType.TRAIN,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
+        val_dataset=LstmDataset(type=DatasetType.VALID,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
+        test_dataset=LstmDataset(type=DatasetType.TEST,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
+
+        logging.info("Saving datasets to pickle")
+        pickle.dump(train_dataset,open(train_dataset_pickle_path,"wb"))
+        pickle.dump(val_dataset,open(val_dataset_pickle_path,"wb"))
+        pickle.dump(test_dataset,open(test_dataset_pickle_path,"wb"))
+    else :
+        logging.info("Loading datasets from pickle")
+        train_dataset = pickle.load(open(train_dataset_pickle_path, "rb"))
+        val_dataset = pickle.load(open(val_dataset_pickle_path, "rb"))
+        test_dataset = pickle.load(open(test_dataset_pickle_path, "rb"))
+
+
+
 
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 

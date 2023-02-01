@@ -41,8 +41,8 @@ class LstmPredictor(nn.Module):
             self.input_dim = self.features_encoder.hidden_dim + 1
 
             #Freeze the encoder weights
-            for param in self.features_encoder.parameters():
-                param.requires_grad = False
+            # for param in self.features_encoder.parameters():
+            #     param.requires_grad = False
 
         else :
             self.features_encoder = None
