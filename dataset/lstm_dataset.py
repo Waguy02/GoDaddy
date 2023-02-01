@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS, TEST_FILE, CENSUS_FILE
+from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS, TEST_FILE, CENSUS_FILE, MEAN_MB, STD_MB
 from my_utils import DatasetType, extract_census_features, get_cfips_index
 
 EVAL_START_DATE = "2022-05-01"
@@ -131,9 +131,12 @@ class LstmDataset(Dataset):
         #min_max normalization of rows_data[['microbusiness_density']]
         tensor = torch.tensor(rows_data[['microbusiness_density']].values,
                                        dtype=torch.float32)  # Not considering the census features
+
+        tensor = (tensor - MEAN_MB)/STD_MB #Normalize the microbusiness density
+
         if self.use_census:
             censur_features_tensor = extract_census_features(rows_data, cfips_index=self.cfips_index,single_row=False)
-            tensor = torch.cat((tensor, censur_features_tensor), dim=1)
+            tensor = torch.cat((censur_features_tensor,tensor), dim=1)
 
         return tensor
 

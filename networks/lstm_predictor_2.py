@@ -34,7 +34,7 @@ class LstmPredictor2(LstmPredictor):
                                              reset=reset,
                                              load_best=load_best)
 
-        self.variante_num=2
+        self.variante_num=1
 
     ##1. Defining network architecture
     def setup_network(self):
@@ -46,8 +46,9 @@ class LstmPredictor2(LstmPredictor):
 
         if self.use_encoder:
             # Freeze the encoder weights
-            for param in self.features_encoder.parameters():
-                param.requires_grad = False
+            # for param in self.features_encoder.parameters():
+            #     param.requires_grad = False
+            pass
 
 
         self.regressor_dim = self.hidden_dim + (0 if not self.use_encoder else self.features_encoder.hidden_dim)

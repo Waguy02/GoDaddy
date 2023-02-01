@@ -37,7 +37,7 @@ class LstmPredictor(nn.Module):
                 config = json.load(f)
                 ae_hidden_dim = config["hidden_dim"]
 
-            self.features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,hidden_dim=ae_hidden_dim,load_best=True).to(DEVICE)
+            self.features_encoder = FeaturesAENetwork( hidden_dim=ae_hidden_dim).to(DEVICE)
             self.input_dim = self.features_encoder.hidden_dim + 1
 
             #Freeze the encoder weights

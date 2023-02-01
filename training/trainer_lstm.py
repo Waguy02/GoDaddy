@@ -3,13 +3,14 @@ import json
 import logging
 import os
 import shutil
+import warnings
 
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from constants import DEVICE
+from constants import DEVICE, STD_MB, MEAN_MB
 from my_utils import Averager
 
 
@@ -116,7 +117,8 @@ class TrainerLstmPredictor:
                 y_true = batch[:,:,-1]
 
                 # nb_futures= min(train_dataloader.dataset.seq_len-1,3)
-                nb_futures=train_dataloader.dataset.seq_len-1
+                # nb_futures=train_dataloader.dataset.seq_len-1
+                nb_futures =3
                 loss=self.loss_fn(y_pred[:,-1-nb_futures:-1],y_true[:,-nb_futures:])
 
                 """
@@ -164,7 +166,10 @@ class TrainerLstmPredictor:
 
             self.network.save_state(best=best)
             self.save_model_info(infos, best=best)
-            self.scheduler.step(epoch_val_loss.value)
+
+             #No wanings
+            with warnings.catch_warnings():
+                self.scheduler.step(epoch_val_loss.value)
 
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
             self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
@@ -194,7 +199,7 @@ class TrainerLstmPredictor:
                 2.Loss computation and other metrics
                 """
                 y_true = batch[:,:,-1]
-                nb_futures=val_dataloader.dataset.seq_len-1
+                nb_futures=3
                 loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
 
                 running_loss.send(loss.item())
@@ -224,7 +229,8 @@ class TrainerLstmPredictor:
 
         #Merge predictions
         predictions=np.squeeze(np.concatenate(predictions,axis=0))
-
+        #Denormalize. MEAN_MB, STD_MB
+        predictions=predictions*STD_MB+MEAN_MB
 
         #Update all microbusiness_denisty column
 

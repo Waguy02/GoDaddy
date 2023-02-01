@@ -106,19 +106,19 @@ def extract_census_features(row,cfips_index,single_row=True):
 
         cfips_one_hot = get_cfips_encoding(row['cfips'], cfips_index)
     else :
-        features_tensor= torch.from_numpy(row[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc', 'year']].values)
+        features_tensor= torch.from_numpy(row[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc']].values)
         row_one_hots= [get_cfips_encoding(cfips,cfips_index) for cfips in row['cfips']]
         cfips_one_hot = torch.stack(row_one_hots)
 
 
 
     #Min-max normalization
-    features_tensor[0] = (features_tensor[0]- 24.5)/ (97.6-24.5)
-    features_tensor[1] = (features_tensor[1] /48)
-    features_tensor[2] = (features_tensor[2]/ 54)
-    features_tensor[3] = (features_tensor[3] / 17.4)
-    features_tensor[4] = (features_tensor[4]- 17109)/(1586821-17109)
-    features_tensor[5] = (features_tensor[5] / 2023)
+    features_tensor[0] = (features_tensor[0]- 74.68)/ (9.37)
+    features_tensor[1] = (features_tensor[1]-14.22) /(5.68)
+    features_tensor[2] = (features_tensor[2]-4.74)/(5.71)
+    features_tensor[3] = (features_tensor[3]-1.35) / (0.96)
+    features_tensor[4] = (features_tensor[4]-52830.75)/(14128.75)
+
 
 
 

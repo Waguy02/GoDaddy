@@ -11,7 +11,7 @@ use_cuda = torch .cuda.is_available()
 DEVICE = torch.device("cuda" if use_cuda else "cpu")
 
 
-N_CENSUS_FEATURES= 6 #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc, microbusiness_density
+N_CENSUS_FEATURES= 5 #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc
 #cfips is not considered as a feature we use a one-hot encoding for it
 
 
@@ -34,3 +34,9 @@ TRAIN_FILE= os.path.join(DATA_DIR, "train.csv")
 TEST_FILE= os.path.join(DATA_DIR, "test.csv")
 
 CENSUS_FILE =os.path.join(DATA_DIR, "census_ae.csv")
+
+
+
+#Scaling factors for microbusiness density
+MEAN_MB= 3.817671
+STD_MB= 4.991087
