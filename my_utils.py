@@ -101,8 +101,8 @@ def extract_census_features(row,cfips_index,single_row=True):
                                         row['pct_college'],
                                         row['pct_foreign_born'],
                                         row['pct_it_workers'],
-                                        row['median_hh_inc'],
-                                        row['year']], dtype=torch.float32)
+                                        row['median_hh_inc']
+                                        ], dtype=torch.float32)
 
         cfips_one_hot = get_cfips_encoding(row['cfips'], cfips_index)
     else :
