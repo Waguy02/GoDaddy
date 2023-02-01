@@ -10,7 +10,7 @@ import pandas as pd
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from constants import DEVICE, STD_MB, MEAN_MB
+from constants import DEVICE, STD_MB, MEAN_MB, NB_FUTURES
 from my_utils import Averager
 
 
@@ -107,7 +107,7 @@ class TrainerLstmPredictor:
                 1.Forward pass
                 """
                 batch=batch.to(DEVICE)
-                y_pred = self.network(batch).squeeze()
+                y_pred = self.network(batch)
                 ## The output is the values of the density for each time step
 
                 """
@@ -116,10 +116,14 @@ class TrainerLstmPredictor:
                 # The density is the last item of the batch
                 y_true = batch[:,:,-1]
 
-                # nb_futures= min(train_dataloader.dataset.seq_len-1,3)
-                # nb_futures=train_dataloader.dataset.seq_len-1
-                nb_futures =3
-                loss=self.loss_fn(y_pred[:,-1-nb_futures:-1],y_true[:,-nb_futures:])
+                nb_futures = min(train_dataloader.dataset.seq_len - 1, NB_FUTURES)
+                if self.network.variante_num ==2:#Attention model: (single output)
+                    loss = self.loss_fn(y_pred, y_true[:, -nb_futures:])
+                else :
+                    y_pred=y_pred.squeeze()
+                    loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
+
+
 
                 """
                 3.Optimizing
@@ -197,13 +201,18 @@ class TrainerLstmPredictor:
                 1.Forward pass
                 """
                 batch=batch.to(DEVICE)
-                y_pred = self.network(batch).squeeze()
+                y_pred = self.network(batch)
                 """ 
                 2.Loss computation and other metrics
                 """
                 y_true = batch[:,:,-1]
-                nb_futures=3
-                loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
+
+                nb_futures = min(val_dataloader.dataset.seq_len - 1, NB_FUTURES)
+                if self.network.variante_num == 2:  # Attention model: (single output)
+                    loss = self.loss_fn(y_pred, y_true[:, -nb_futures:])
+                else:
+                    y_pred = y_pred.squeeze()
+                    loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
 
                 running_loss.send(loss.item())
 
@@ -218,22 +227,28 @@ class TrainerLstmPredictor:
         Compute loss and metrics on a validation dataloader
         @return:
         """
+        assert test_dataloader.dataset.batch_size == 1, "Batch size must be 1 for test"
         predictions = []
         with torch.no_grad():
             self.network.eval()
-            for _, batch in enumerate(tqdm(test_dataloader," Running tests for submission")):
+            for i, batch in enumerate(tqdm(test_dataloader," Running tests for submission")):
                 batch = batch.to(DEVICE)
-                y_pred = self.network(batch).cpu()[:,-1:]
+                y_pred = self.network(batch).cpu().squeeze().item()
+
+                # Denormalize. MEAN_MB, STD_MB (if noramlized)
+                # y_pred = y_pred * STD_MB + MEAN_MB
                 """ 
                 2.Loss computation and other metrics
                 """
-                predictions.append(y_pred.numpy())
+                predictions.append(y_pred)
 
+                ##Update all microbusiness_denisty column
+                id_row=test_dataloader.dataset.test_df.iloc[i]["id"]
+                self.test_df.main_df.loc[id_row,"microbusiness_density"]=predictions[-1]
 
         #Merge predictions
-        predictions=np.squeeze(np.concatenate(predictions,axis=0))
-        #Denormalize. MEAN_MB, STD_MB
-        predictions=predictions*STD_MB+MEAN_MB
+        predictions=np.array(predictions)
+
 
         #Update all microbusiness_denisty column
 

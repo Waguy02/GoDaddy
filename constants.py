@@ -28,13 +28,14 @@ N_COUNTY=3142
 N_DIMS_COUNTY_ENCODING= np.ceil(np.log2(N_COUNTY)).astype(int) #Number of bits needed to encode a county
 
 FEATURES_AE_CENSUS_DIR=os.path.join(EXPERIMENTS_DIR, "features_ae_2_dims")
-
+FEATURES_AE_LATENT_DIM= 2
 
 TRAIN_FILE= os.path.join(DATA_DIR, "train.csv")
 TEST_FILE= os.path.join(DATA_DIR, "test.csv")
 
 CENSUS_FILE =os.path.join(DATA_DIR, "census_ae.csv")
 
+NB_FUTURES= 10 #Number of days to predict
 
 
 #Scaling factors for microbusiness density

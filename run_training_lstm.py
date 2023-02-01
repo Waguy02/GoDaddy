@@ -11,7 +11,8 @@ from my_utils import DatasetType
 from dataset.lstm_dataset import LstmDataset
 from logger import setup_logger
 from networks.lstm_predictor import LstmPredictor
-from networks.lstm_predictor_2 import LstmPredictor2
+from networks.lstm_predictor2 import LstmPredictor2
+from networks.lstm_predictor_attention import LstmPredictorWithAttention
 from training.trainer_lstm import TrainerLstmPredictor
 
 
@@ -22,11 +23,11 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False, help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.1, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
-    parser.add_argument("--batch_size", "-bs", type=int, default=512, help="Batch size for training")
+    parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
     parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
@@ -41,7 +42,7 @@ def main(args):
 
     #Format the model name
 
-    variante = "v0" if args.variante==0 else "v1"
+    variante = f"v{args.variante}"
     if args.model_name is None:
         model_name = f"lstm_{variante}_{'ae_' if args.use_census else ''}hd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
     else :
@@ -52,14 +53,20 @@ def main(args):
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
 
 
-    NetworkClass = LstmPredictor if args.variante==0 else LstmPredictor2
+    NetworkClass = None
+    if args.variante == 0:
+        NetworkClass = LstmPredictor
+    elif args.variante == 1:
+        NetworkClass = LstmPredictor2
+    elif args.variante == 2:
+        NetworkClass = LstmPredictorWithAttention
 
     network = NetworkClass(experiment_dir=experiment_dir, hidden_dim=4, n_hidden_layers=1, use_encoder=args.use_census,reset= args.reset).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=100, factor=0.5, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(220*512/args.batch_size), factor=0.5, verbose=True)
 
     criterion= SmapeCriterion().to(DEVICE)
 
@@ -75,37 +82,38 @@ def main(args):
                       )
 
     # Save  the dataset according to type, seq_len_stride and use_census: using pickle
-    train_dataset_pickle_path = os.path.join(ROOT_DIR,"dataset","pickle"
-                                             f"train_dataset_{args.seq_len}_{args.seq_stride}_{args.use_census}.pickle")
-    val_dataset_pickle_path = os.path.join(ROOT_DIR,"dataset","pickle"
-                                           f"val_dataset_{args.seq_len}_{args.seq_stride}_{args.use_census}.pickle")
-    test_dataset_pickle_path = os.path.join(ROOT_DIR,"dataset","pickle"
-                                            f"test_dataset_{args.seq_len}_{args.seq_stride}_{args.use_census}.pickle")
-
-    #If some of the dataset is not saved, we create it
-    if not os.path.exists(train_dataset_pickle_path) or not os.path.exists(val_dataset_pickle_path) or not os.path.exists(test_dataset_pickle_path):
-        train_dataset=LstmDataset(type=DatasetType.TRAIN,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
-        val_dataset=LstmDataset(type=DatasetType.VALID,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
-        test_dataset=LstmDataset(type=DatasetType.TEST,seq_len=args.seq_len,stride=args.seq_stride,use_census=args.use_census)
-
-        logging.info("Saving datasets to pickle")
-        pickle.dump(train_dataset,open(train_dataset_pickle_path,"wb"))
-        pickle.dump(val_dataset,open(val_dataset_pickle_path,"wb"))
-        pickle.dump(test_dataset,open(test_dataset_pickle_path,"wb"))
-    else :
-        logging.info("Loading datasets from pickle")
-        train_dataset = pickle.load(open(train_dataset_pickle_path, "rb"))
-        val_dataset = pickle.load(open(val_dataset_pickle_path, "rb"))
-        test_dataset = pickle.load(open(test_dataset_pickle_path, "rb"))
 
 
 
+
+
+
+
+    datasets_pickle_path = os.path.join(ROOT_DIR,"dataset","pickle",f"all_dataset_{args.seq_len}_{args.seq_stride}_{args.use_census}.pickle")
+
+
+
+    if not os.path.exists(datasets_pickle_path):
+        train_dataset = LstmDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
+                                    use_census=args.use_census)
+        val_dataset = LstmDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
+                              use_census=args.use_census)
+        test_dataset = LstmDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
+                               use_census=args.use_census)
+
+        with open(datasets_pickle_path,"wb") as f:
+            logging.info(f"Saving datasets to {datasets_pickle_path}")
+            pickle.dump((train_dataset,val_dataset,test_dataset),f)
+    else:
+        with open(datasets_pickle_path,"rb") as f:
+            logging.info(f"Loading datasets  from {datasets_pickle_path}")
+            train_dataset,val_dataset,test_dataset = pickle.load(f)
 
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
     train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False,shuffle=False)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1,num_workers=0,drop_last=False,shuffle=False)
 
     ##Train
     trainer.fit(train_dataloader,val_dataloader)

@@ -57,7 +57,7 @@ class LstmPredictor2(LstmPredictor):
 
         self.regressor=nn.Sequential(
             nn.Linear(self.regressor_dim, 8),
-            nn.Sigmoid(),
+            nn.ReLU(),
             nn.Linear(8, 1))
 
 
@@ -74,6 +74,8 @@ class LstmPredictor2(LstmPredictor):
         @param input:
         @return:
         """
+
+
         #1. First apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
         if self.use_encoder:
             encoded_features = self.features_encoder.encode(input[:, :, :self.features_encoder.input_dim])

@@ -132,7 +132,7 @@ class LstmDataset(Dataset):
         tensor = torch.tensor(rows_data[['microbusiness_density']].values,
                                        dtype=torch.float32)  # Not considering the census features
 
-        tensor = (tensor - MEAN_MB)/STD_MB #Normalize the microbusiness density
+        # tensor = (tensor - MEAN_MB)/STD_MB #Normalize the microbusiness density
 
         if self.use_census:
             censur_features_tensor = extract_census_features(rows_data, cfips_index=self.cfips_index,single_row=False)

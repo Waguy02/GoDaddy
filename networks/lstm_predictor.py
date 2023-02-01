@@ -5,7 +5,7 @@ import torch
 import torchvision.models
 from torch import nn
 from constants import ROOT_DIR, DEVICE, LSTM_HIDDEN_DIM, N_CENSUS_FEATURES, USE_CENSUS, EXPERIMENTS_DIR, \
-    FEATURES_AE_CENSUS_DIR
+    FEATURES_AE_CENSUS_DIR, FEATURES_AE_LATENT_DIM
 from networks.features_autoencoder import FeaturesAENetwork
 
 
@@ -31,18 +31,19 @@ class LstmPredictor(nn.Module):
 
         self.use_encoder = use_encoder
         if self.use_encoder:
-            ##Get the hidden dimension of the encoder
+            #Get the hidden dimension of the encoder
             config_encoder=os.path.join(FEATURES_AE_CENSUS_DIR,"model.json")
             with open(config_encoder) as f:
                 config = json.load(f)
                 ae_hidden_dim = config["hidden_dim"]
-
             self.features_encoder = FeaturesAENetwork( hidden_dim=ae_hidden_dim).to(DEVICE)
+
+            # self.features_encoder = FeaturesAENetwork(hidden_dim=FEATURES_AE_LATENT_DIM).to(DEVICE)
             self.input_dim = self.features_encoder.hidden_dim + 1
 
             #Freeze the encoder weights
-            # for param in self.features_encoder.parameters():
-            #     param.requires_grad = False
+            for param in self.features_encoder.parameters():
+                param.requires_grad = False
 
         else :
             self.features_encoder = None
