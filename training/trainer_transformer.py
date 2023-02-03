@@ -12,14 +12,14 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from constants import DEVICE, STD_MB, MEAN_MB, NB_FUTURES
 from my_utils import Averager
+from networks.transformer_predictor import TransformerPredictor
 
 
-
-class TrainerLstmPredictor:
+class TrainerTransformerPredictor:
     """
     Class to manage the full training pipeline
     """
-    def __init__(self, network,
+    def __init__(self, network: TransformerPredictor,
                  criterion,
                  optimizer,
                  scheduler=None,
@@ -73,7 +73,7 @@ class TrainerLstmPredictor:
         itr = self.start_epoch * len(train_dataloader) * self.batch_size  ##Global counter for steps
 
         #Save model graph
-        self.summary_writer.add_graph(self.network, next(iter(train_dataloader)).to(DEVICE))
+        self.summary_writer.add_graph(self.network, next(iter(train_dataloader)).to(DEVICE)[:,:-1,:])
 
         self.best_val_loss = 1e20  # infinity
         if os.path.exists(self.model_info_file):
@@ -106,32 +106,23 @@ class TrainerLstmPredictor:
                 """
                 1.Forward pass
                 """
-                batch=batch.to(DEVICE)
-                y_pred = self.network(batch[:,:-1,:])  # [batch_size, seq_len, 1
+                batch = batch.to(DEVICE)
+                input = batch[:, :-1, :]
+                y_pred = self.network(input)
                 ## The output is the values of the density for each time step
 
                 """
                 2.Loss computation and other metrics
                 """
                 # The density is the last item of the batch
-                y_true = batch[:,:,-1]
-
-                nb_futures = min(train_dataloader.dataset.seq_len - 1, NB_FUTURES)
-                if self.network.variante_num ==2:#Attention model: (single output)
-                    loss = self.loss_fn(y_pred, y_true[:, -nb_futures:])
-                else :
-                    y_pred=y_pred.squeeze()
-                    loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
-
-
+                y_true = batch[:,:,-1].to(DEVICE)
+                loss = self.loss_fn(y_pred, y_true[:, -1:])
 
                 """
                 3.Optimizing
                 """
                 loss.backward()
                 self.optimizer.step()
-
-
                 running_loss.send(loss.cpu().item())
                 pbar.set_postfix(current_loss=loss.cpu().item(), current_mean_loss=running_loss.value)
 
@@ -139,8 +130,8 @@ class TrainerLstmPredictor:
                 4.Writing logs and tensorboard data, loss and other metrics
                 """
                 self.summary_writer.add_scalar("Train/loss", loss.item(), itr)
-
                 self.scheduler.step(loss.item())
+
 
 
             epoch_val_loss =self.eval(val_dataloader,epoch)
@@ -151,8 +142,10 @@ class TrainerLstmPredictor:
                 "val_loss":epoch_val_loss.value,
                 "lr": self.optimizer.param_groups[0]['lr'],
                 "input_dim": self.network.input_dim,
-                "hidden_dim": self.network.hidden_dim,
-                "n_hidden_lstm_layers": self.network.n_hidden_layers,
+                "emb_dim": self.network.emb_dim,
+                "dim_feedforward": self.network.dim_feedforward,
+                "n_head": self.network.n_head,
+                "n_layers": self.network.n_layers,
                 "seq_len": train_dataloader.dataset.seq_len,
                 "batch_size": train_dataloader.batch_size,
                 "stride": train_dataloader.dataset.stride,
@@ -172,11 +165,6 @@ class TrainerLstmPredictor:
             self.network.save_state(best=best)
             self.save_model_info(infos, best=best)
 
-             # if scheduler is StepLR
-            # if isinstance(self.scheduler, torch.optim.lr_scheduler.StepLR):
-            #     self.scheduler.step()
-            # else:
-            #     self.scheduler.step(epoch_val_loss.value)
 
             self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
             self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
@@ -201,22 +189,20 @@ class TrainerLstmPredictor:
                 1.Forward pass
                 """
                 batch=batch.to(DEVICE)
-                y_pred = self.network(batch)
+                input=batch[:,:-1,:]
+                y_pred = self.network(input)
                 """ 
                 2.Loss computation and other metrics
                 """
                 y_true = batch[:,:,-1]
 
-                nb_futures = min(val_dataloader.dataset.seq_len - 1, NB_FUTURES)
-                if self.network.variante_num == 2:  # Attention model: (single output)
-                    loss = self.loss_fn(y_pred, y_true[:, -nb_futures:])
-                else:
-                    y_pred = y_pred.squeeze()
-                    loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
+
+                loss = self.loss_fn(y_pred, y_true[:, -1:])
 
                 running_loss.send(loss.item())
 
                 pbar.set_postfix(current_loss=loss.item(), current_mean_loss=running_loss.value)
+
 
         return running_loss
 

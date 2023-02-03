@@ -36,14 +36,14 @@ class LstmPredictor(nn.Module):
             with open(config_encoder) as f:
                 config = json.load(f)
                 ae_hidden_dim = config["hidden_dim"]
-            self.features_encoder = FeaturesAENetwork( hidden_dim=ae_hidden_dim).to(DEVICE)
+            self.features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,hidden_dim=ae_hidden_dim).to(DEVICE)
 
             # self.features_encoder = FeaturesAENetwork(hidden_dim=FEATURES_AE_LATENT_DIM).to(DEVICE)
             self.input_dim = self.features_encoder.hidden_dim + 1
 
-            #Freeze the encoder weights
-            for param in self.features_encoder.parameters():
-                param.requires_grad = False
+            # # Freeze the encoder weights
+            # for param in self.features_encoder.parameters():
+            #     param.requires_grad = False
 
         else :
             self.features_encoder = None
@@ -70,11 +70,13 @@ class LstmPredictor(nn.Module):
         self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=self.n_hidden_layers,batch_first=True)
 
         self.regressor=nn.Sequential(
-            nn.Linear(self.hidden_dim,1)
+            nn.Linear(self.hidden_dim,8),
+            nn.ReLU(),
+            nn.Linear(8, 1)
             )
 
         if self.use_encoder:
-            # Freeze the encoder weights
+            # Freeze the encoder weights/
             for param in self.features_encoder.parameters():
                 param.requires_grad = False
 

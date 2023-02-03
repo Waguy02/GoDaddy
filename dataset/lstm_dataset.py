@@ -16,7 +16,7 @@ class LstmDataset(Dataset):
     def __init__(self, type, seq_len, stride=1,use_census=USE_CENSUS):
         self.type = type
         self.seq_len = seq_len
-        self.stride = stride
+        self.stride = stride if type == DatasetType.TRAIN else 1
         self.use_census = use_census
         self.load_data()
         self.prepare_sequences()
@@ -42,6 +42,9 @@ class LstmDataset(Dataset):
             self.test_df["state"] =["NAN" for _ in range(len(self.test_df))]
 
             self.main_df = pd.concat([self.main_df, self.test_df], ignore_index=True)
+
+            self.test_df =self.test_df.sort_values(by=["cfips","first_day_of_month"])
+            self.test_df = self.test_df.reset_index(drop=True)
 
         self.main_df['year']=pd.to_datetime(self.main_df['first_day_of_month'].str.split("-", expand=True)[0])
 
@@ -81,7 +84,7 @@ class LstmDataset(Dataset):
                     break
 
                 #Get the corresponding ids
-                self.sequences.append((self.main_df.iloc[i]["id"], self.main_df.iloc[i + self.seq_len]["id"]))
+                self.sequences.append((df.iloc[i]["id"], df.iloc[i]["id"]+ self.seq_len))
 
 
 
@@ -101,7 +104,8 @@ class LstmDataset(Dataset):
 
                 offset=df.iloc[i]["id"]
 
-                offset = offset - self.seq_len + 1
+                offset = offset - self.seq_len  # The step to predict is the last one of the sequence
+
 
                 ##check if the cfips is the same
                 if self.main_df.iloc[offset]["cfips"] != self.main_df.iloc[offset + self.seq_len - 1]["cfips"]:
@@ -128,11 +132,13 @@ class LstmDataset(Dataset):
         rows_data=self.main_df.iloc[start:end]
 
 
+        #ensure unique cfips
+        assert len(rows_data["cfips"].unique())==1
 
         tensor = torch.tensor(rows_data[['microbusiness_density']].values,
                                        dtype=torch.float32)  # Not considering the census features
 
-        # tensor = (tensor - MEAN_MB)/STD_MB #Normalize the microbusiness density
+
 
         if self.use_census:
             censur_features_tensor = extract_census_features(rows_data, cfips_index=self.cfips_index,single_row=False)

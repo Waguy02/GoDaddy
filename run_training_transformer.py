@@ -13,7 +13,9 @@ from logger import setup_logger
 from networks.lstm_predictor import LstmPredictor
 from networks.lstm_predictor2 import LstmPredictor2
 from networks.lstm_predictor_attention import LstmPredictorWithAttention
+from networks.transformer_predictor import TransformerPredictor
 from training.trainer_lstm import TrainerLstmPredictor
+from training.trainer_transformer import TrainerTransformerPredictor
 
 
 def cli():
@@ -31,20 +33,25 @@ def cli():
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
     parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
-    parser.add_argument("--seq_len", "-sl", type=int, default=SEQ_LEN, help="Sequence length")
-    parser.add_argument("--seq_stride", "-ss", type=int, default=SEQ_STRIDE, help="Sequence stride")
-    parser.add_argument("--hidden_dim", "-hd", type=int, default=4, help="Hidden dimension of the LSTM")
-    parser.add_argument("--n_hidden_layers", "-nl", type=int, default=1, help="Number of hidden layers of the LSTM")
-    parser.add_argument("--variante","-v",type=int,default=0,help="Variante of the model")
+    parser.add_argument("--seq_len", "-sl", type=int, default=6, help="Sequence length")
+    parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
+
+    ## Transformer arg
+    parser.add_argument("--emb_dim", "-ed", type=int, default=4, help="Embedding dimension of the transformer")
+    parser.add_argument("--n_layers", "-nl", type=int, default=2, help="Number of layers of the transformer")
+    parser.add_argument("--n_head", "-nh", type=int, default=2, help="Number of heads of the transformer")
+    parser.add_argument("--dim_feedforward", "-df", type=int, default=8, help="Feedforward dimension of the transformer")
+
+
     return parser.parse_args()
 
 def main(args):
 
     #Format the model name
 
-    variante = f"v{args.variante}"
+
     if args.model_name is None:
-        model_name = f"lstm_{variante}_{'ae_' if args.use_census else ''}hd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
+        model_name=f"transformer_{'ae_' if args.use_census else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
     else :
         model_name=args.model_name
 
@@ -53,15 +60,19 @@ def main(args):
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
 
 
-    NetworkClass = None
-    if args.variante == 0:
-        NetworkClass = LstmPredictor
-    elif args.variante == 1:
-        NetworkClass = LstmPredictor2
-    elif args.variante == 2:
-        NetworkClass = LstmPredictorWithAttention
+    # Setup logger
 
-    network = NetworkClass(experiment_dir=experiment_dir, hidden_dim=4, n_hidden_layers=1, use_encoder=args.use_census,reset= args.reset).to(DEVICE)
+
+    network =TransformerPredictor(
+                                    experiment_dir=experiment_dir,
+                                    emb_dim=args.emb_dim,
+                                  n_layers=args.n_layers,
+                                  n_head=args.n_head,
+                                  dim_feedforward=args.dim_feedforward,
+                                  use_encoder=args.use_census,
+                                    max_seq_len=args.seq_len-1,
+                                    reset=args.reset
+                ).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
@@ -72,7 +83,7 @@ def main(args):
 
 
     logging.info("Training : "+model_name)
-    trainer = TrainerLstmPredictor(network,
+    trainer = TrainerTransformerPredictor(network,
                       criterion,
                       optimizer=optimizer,
                       scheduler=scheduler,
