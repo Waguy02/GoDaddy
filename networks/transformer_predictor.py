@@ -1,8 +1,9 @@
+import json
 import logging
 import os
 import torch
 from torch import nn
-from constants import DEVICE, USE_CENSUS, FEATURES_AE_LATENT_DIM
+from constants import DEVICE, USE_CENSUS, FEATURES_AE_LATENT_DIM, FEATURES_AE_CENSUS_DIR
 from networks.features_autoencoder import FeaturesAENetwork
 
 
@@ -14,6 +15,7 @@ class TransformerPredictor(nn.Module):
                  n_head=8,
                  max_seq_len=100,
                  dim_feedforward=128,
+                 use_derivative=True,
                  use_encoder=USE_CENSUS,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
@@ -34,21 +36,26 @@ class TransformerPredictor(nn.Module):
         self.dim_feedforward = dim_feedforward
         self.use_census_encoder = use_encoder
         self.max_seq_len = max_seq_len
+
+        self.census_features_encoder = None
+        self.input_dim =1
+        self.use_derivative = use_derivative
+        if self.use_derivative:
+            self.input_dim += 2 # 2 for derivative
+
         if self.use_census_encoder:
-            #Get the hidden dimension of the encoder
-            # config_encoder=os.path.join(FEATURES_AE_CENSUS_DIR,"model.json")
-            # with open(config_encoder) as f:
-            #     config = json.load(f)
-            #     ae_hidden_dim = config["hidden_dim"]
-            # self.features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,hidden_dim=ae_hidden_dim).to(DEVICE)
-            self.census_features_encoder = FeaturesAENetwork(hidden_dim=FEATURES_AE_LATENT_DIM).to(DEVICE)
-            self.input_dim = self.census_features_encoder.hidden_dim + 1
+            # Get the hidden dimension of the encoder
+            config_encoder=os.path.join(FEATURES_AE_CENSUS_DIR,"model.json")
+            with open(config_encoder) as f:
+                config = json.load(f)
+                ae_hidden_dim = config["hidden_dim"]
+            self.census_features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,hidden_dim=ae_hidden_dim).to(DEVICE)
+            # self.census_features_encoder = FeaturesAENetwork(hidden_dim=FEATURES_AE_LATENT_DIM).to(DEVICE)
+            self.input_dim = self.census_features_encoder.hidden_dim + self.input_dim
             # # Freeze the encoder weights
             # for param in self.features_encoder.parameters():
             #     param.requires_grad = False
-        else :
-            self.census_features_encoder = None
-            self.input_dim =1
+
 
 
         self.experiment_dir = experiment_dir
@@ -70,8 +77,7 @@ class TransformerPredictor(nn.Module):
         #Input encoder from self.input_dim to self.emb_dim along with positional encoding
         self.input_encoder = nn.Sequential(
             nn.Linear(self.input_dim, self.emb_dim),
-            nn.ReLU(),
-            nn.Linear(self.emb_dim, self.emb_dim)
+
         )
 
         ##Positional encoding
@@ -81,7 +87,7 @@ class TransformerPredictor(nn.Module):
         P[0, :, 0::2] = torch.sin(X)
         P[0, :, 1::2] = torch.cos(X)
         self.positional_encoding = nn.Parameter(P, requires_grad=False)
-        self.dropout = nn.Dropout(p=0.1)
+        # self.dropout = nn.Dropout(p=0.1)
 
 
         self.transformer_decoder = nn.TransformerDecoder(
@@ -91,9 +97,9 @@ class TransformerPredictor(nn.Module):
         )
 
         self.regressor=nn.Sequential(
-            nn.Linear(self.emb_dim, 8),
+            nn.Linear(self.emb_dim, 16),
             nn.ReLU(),
-            nn.Linear(8, 1)
+            nn.Linear(16, 1)
             )
 
         if self.use_census_encoder:
@@ -143,7 +149,22 @@ class TransformerPredictor(nn.Module):
         @param input:
         @return:
         """
-        #1. First apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
+        #0. Adding derivative to the input (at left and right)
+        if self.use_derivative:
+            d_left= torch.zeros((input.shape[0],input.shape[1],1), device=DEVICE)
+            d_left[:,1:, -1] = input[:, 1:, -1] - input[:, :-1, -1]
+
+            d_right= torch.zeros((input.shape[0],input.shape[1],1), device=DEVICE)
+            d_right[:,:-1, -1] = input[:, 1:, -1] - input[:, :-1, -1]
+
+            input = torch.cat((d_left, input, d_right), dim=-1) ## Adding the derivative to the input as a new feature
+
+
+
+
+
+        #1.Apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
+
         if self.use_census_encoder:
             encoded_features = self.census_features_encoder.encode(input[:, :, :self.census_features_encoder.input_dim])
             input = torch.cat((encoded_features, input[:, :, self.census_features_encoder.input_dim:]), dim=-1)
@@ -153,7 +174,7 @@ class TransformerPredictor(nn.Module):
 
         #3. Add the positional encoding
         input = input + self.positional_encoding[:, :input.shape[1], :]
-        input = self.dropout(input)
+        # input = self.dropout(input)
 
 
         #.4 Setting mask to avoid looking at future values

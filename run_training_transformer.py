@@ -25,23 +25,25 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False, help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.1, help="Learning rate of Adam optimized")
-    parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
+    parser.add_argument("--nb_epochs", "-e", type=int, default=60, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
-    parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
+    parser.add_argument("--batch_size", "-bs", type=int, default=128, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
-    parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
+    parser.add_argument("--autorun_tb","-tb",default=True,action='store_true',help="Autorun tensorboard")
     parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
-    parser.add_argument("--seq_len", "-sl", type=int, default=6, help="Sequence length")
+    parser.add_argument("--seq_len", "-sl", type=int, default=10, help="Sequence length")
     parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
 
     ## Transformer arg
-    parser.add_argument("--emb_dim", "-ed", type=int, default=4, help="Embedding dimension of the transformer")
-    parser.add_argument("--n_layers", "-nl", type=int, default=2, help="Number of layers of the transformer")
-    parser.add_argument("--n_head", "-nh", type=int, default=2, help="Number of heads of the transformer")
-    parser.add_argument("--dim_feedforward", "-df", type=int, default=8, help="Feedforward dimension of the transformer")
+    parser.add_argument("--emb_dim", "-ed", type=int, default=12, help="Embedding dimension of the transformer")
+    parser.add_argument("--n_layers", "-nl", type=int, default=4, help="Number of layers of the transformer")
+    parser.add_argument("--n_head", "-nh", type=int, default=4, help="Number of heads of the transformer")
+    parser.add_argument("--dim_feedforward", "-df", type=int, default=12 , help="Feedforward dimension of the transformer")
 
+    ##Use derivate
+    parser.add_argument("--use_derivative", "-dv",default=True,action='store_true',help="Use derivate")
 
     return parser.parse_args()
 
@@ -51,7 +53,7 @@ def main(args):
 
 
     if args.model_name is None:
-        model_name=f"transformer_{'ae_' if args.use_census else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
+        model_name=f"transformer_{'ae_' if args.use_census else ''}{'dv_' if args.use_derivative else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
     else :
         model_name=args.model_name
 
@@ -77,7 +79,7 @@ def main(args):
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(320*512/args.batch_size), factor=0.5, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(500*512/args.batch_size), factor=0.5, verbose=True)
 
     criterion= SmapeCriterion().to(DEVICE)
 

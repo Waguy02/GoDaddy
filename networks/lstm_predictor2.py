@@ -44,14 +44,14 @@ class LstmPredictor2(LstmPredictor):
         """
         self.input_dim = 1
 
-        if self.use_encoder:
+        if self.use_census_encoder:
             # Freeze the encoder weights
             # for param in self.features_encoder.parameters():
             #     param.requires_grad = False
             pass
 
 
-        self.regressor_dim = self.hidden_dim + (0 if not self.use_encoder else self.features_encoder.hidden_dim)
+        self.regressor_dim = self.hidden_dim + (0 if not self.use_census_encoder else self.features_encoder.hidden_dim)
 
         self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=self.n_hidden_layers,batch_first=True)
 
@@ -77,7 +77,7 @@ class LstmPredictor2(LstmPredictor):
 
 
         #1. First apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
-        if self.use_encoder:
+        if self.use_census_encoder:
             encoded_features = self.features_encoder.encode(input[:, :, :self.features_encoder.input_dim])
             ##The encoded features do not go through the LSTM, so we need to concatenate them with the rest of the input
             lstm_input= input[:, :, self.features_encoder.input_dim:]
@@ -88,7 +88,7 @@ class LstmPredictor2(LstmPredictor):
         lstm_output, _ = self.lstm(lstm_input)
 
         #3. Concatenate the encoded features with the LSTM output
-        if self.use_encoder:
+        if self.use_census_encoder:
             output = torch.cat((encoded_features, lstm_output), dim=2)
         else :
             output = lstm_output

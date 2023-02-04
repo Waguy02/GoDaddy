@@ -31,11 +31,12 @@ def cli():
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
     parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
-    parser.add_argument("--seq_len", "-sl", type=int, default=SEQ_LEN, help="Sequence length")
-    parser.add_argument("--seq_stride", "-ss", type=int, default=SEQ_STRIDE, help="Sequence stride")
-    parser.add_argument("--hidden_dim", "-hd", type=int, default=4, help="Hidden dimension of the LSTM")
+    parser.add_argument("--seq_len", "-sl", type=int, default=7, help="Sequence length")
+    parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
+    parser.add_argument("--hidden_dim", "-hd", type=int, default=6, help="Hidden dimension of the LSTM")
     parser.add_argument("--n_hidden_layers", "-nl", type=int, default=1, help="Number of hidden layers of the LSTM")
-    parser.add_argument("--variante","-v",type=int,default=0,help="Variante of the model")
+    parser.add_argument("--variante","-v",type=int,default=2,help="Variante of the model")
+    parser.add_argument("--use_derivative", "-dv", default=True, action='store_true', help="Use derivate")
     return parser.parse_args()
 
 def main(args):
@@ -44,11 +45,14 @@ def main(args):
 
     variante = f"v{args.variante}"
     if args.model_name is None:
-        model_name = f"lstm_{variante}_{'ae_' if args.use_census else ''}hd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
+        model_name = f"lstm_{variante}_{'ae_' if args.use_census else ''}{'dv_' if args.use_derivative else ''}ehd.{args.hidden_dim}_nl.{args.n_hidden_layers}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
     else :
         model_name=args.model_name
 
 
+    #Only variante 2 is till supported
+    if args.variante != 2:
+        raise NotImplementedError("Only variante 2 is supported")
 
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
 
@@ -61,12 +65,12 @@ def main(args):
     elif args.variante == 2:
         NetworkClass = LstmPredictorWithAttention
 
-    network = NetworkClass(experiment_dir=experiment_dir, hidden_dim=4, n_hidden_layers=1, use_encoder=args.use_census,reset= args.reset).to(DEVICE)
+    network = NetworkClass(experiment_dir=experiment_dir, use_derivative=args.use_derivative, hidden_dim=4, n_hidden_layers=1, use_encoder=args.use_census,reset= args.reset).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(320*512/args.batch_size), factor=0.5, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(520*512/args.batch_size), factor=0.5, verbose=True)
 
     criterion= SmapeCriterion().to(DEVICE)
 

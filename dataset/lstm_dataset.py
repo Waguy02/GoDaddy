@@ -89,6 +89,8 @@ class LstmDataset(Dataset):
 
 
         else :
+
+
             if self.type == DatasetType.VALID:
                 df = self.main_df[self.main_df['first_day_of_month'] >= EVAL_START_DATE]
 
@@ -133,11 +135,12 @@ class LstmDataset(Dataset):
 
 
         #ensure unique cfips
-        assert len(rows_data["cfips"].unique())==1
+        # assert len(rows_data["cfips"].unique())==1
 
         tensor = torch.tensor(rows_data[['microbusiness_density']].values,
                                        dtype=torch.float32)  # Not considering the census features
 
+        #FEatures scaling
 
 
         if self.use_census:

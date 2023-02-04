@@ -219,7 +219,7 @@ class TrainerTransformerPredictor:
         with torch.no_grad():
             self.network.eval()
             for i, batch in enumerate(tqdm(test_dataloader," Running tests for submission")):
-                batch = batch.to(DEVICE)
+                batch = batch.to(DEVICE)[:, :-1, :]
                 y_pred = self.network(batch).cpu().squeeze().item()
 
                 # Denormalize. MEAN_MB, STD_MB (if noramlized)

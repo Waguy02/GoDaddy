@@ -29,8 +29,8 @@ class LstmPredictor(nn.Module):
 
         self.variante_num=0
 
-        self.use_encoder = use_encoder
-        if self.use_encoder:
+        self.use_census_encoder = use_encoder
+        if self.use_census_encoder:
             #Get the hidden dimension of the encoder
             config_encoder=os.path.join(FEATURES_AE_CENSUS_DIR,"model.json")
             with open(config_encoder) as f:
@@ -75,7 +75,7 @@ class LstmPredictor(nn.Module):
             nn.Linear(8, 1)
             )
 
-        if self.use_encoder:
+        if self.use_census_encoder:
             # Freeze the encoder weights/
             for param in self.features_encoder.parameters():
                 param.requires_grad = False
@@ -123,7 +123,7 @@ class LstmPredictor(nn.Module):
         @return:
         """
         #1. First apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
-        if self.use_encoder:
+        if self.use_census_encoder:
             encoded_features = self.features_encoder.encode(input[:, :, :self.features_encoder.input_dim])
             input = torch.cat((encoded_features, input[:, :, self.features_encoder.input_dim:]), dim=-1)
 
