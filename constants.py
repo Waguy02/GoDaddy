@@ -1,3 +1,4 @@
+import math
 import os
 
 import numpy as np
@@ -25,9 +26,9 @@ SEQ_LEN=6
 SEQ_STRIDE= 1
 
 N_COUNTY=3142
-N_DIMS_COUNTY_ENCODING= np.ceil(np.log2(N_COUNTY)).astype(int) #Number of bits needed to encode a county
+N_DIMS_COUNTY_ENCODING=  math.ceil(math.log(N_COUNTY,2))
 
-FEATURES_AE_CENSUS_DIR=os.path.join(EXPERIMENTS_DIR, "features_ae_1_dims")
+FEATURES_AE_CENSUS_DIR=os.path.join(EXPERIMENTS_DIR, "features_ae_2_dims")
 FEATURES_AE_LATENT_DIM= 2
 
 TRAIN_FILE= os.path.join(DATA_DIR, "train.csv")

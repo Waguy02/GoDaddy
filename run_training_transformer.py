@@ -8,7 +8,7 @@ import torch.utils.data
 from constants import EXPERIMENTS_DIR, SEQ_LEN, SEQ_STRIDE, DEVICE, ROOT_DIR
 from losses.smape import SmapeCriterion
 from my_utils import DatasetType
-from dataset.lstm_dataset import LstmDataset
+from dataset.micro_densisty_dataset import MicroDensityDataset
 from logger import setup_logger
 from networks.lstm_predictor import LstmPredictor
 from networks.lstm_predictor2 import LstmPredictor2
@@ -25,25 +25,25 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False, help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
-    parser.add_argument("--nb_epochs", "-e", type=int, default=60, help="Number of epochs for training")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
+    parser.add_argument("--nb_epochs", "-e", type=int, default=250, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
-    parser.add_argument("--batch_size", "-bs", type=int, default=128, help="Batch size for training")
+    parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=True,action='store_true',help="Autorun tensorboard")
-    parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
-    parser.add_argument("--seq_len", "-sl", type=int, default=10, help="Sequence length")
+    parser.add_argument("--use_census","-c",default=True, action='store_true',help="Use census data")
+    parser.add_argument("--use_derivative", "-dv", default=False, action='store_true', help="Use derivate")
+    parser.add_argument("--seq_len", "-sl", type=int, default=30, help="Sequence length")
     parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
 
     ## Transformer arg
-    parser.add_argument("--emb_dim", "-ed", type=int, default=12, help="Embedding dimension of the transformer")
-    parser.add_argument("--n_layers", "-nl", type=int, default=4, help="Number of layers of the transformer")
-    parser.add_argument("--n_head", "-nh", type=int, default=4, help="Number of heads of the transformer")
-    parser.add_argument("--dim_feedforward", "-df", type=int, default=12 , help="Feedforward dimension of the transformer")
+    parser.add_argument("--emb_dim", "-ed", type=int, default=30, help="Embedding dimension of the transformer")
+    parser.add_argument("--n_layers", "-nl", type=int, default=6, help="Number of layers of the transformer")
+    parser.add_argument("--n_head", "-nh", type=int, default=6 ,help="Number of heads of the transformer")
+    parser.add_argument("--dim_feedforward", "-df", type=int, default=64, help="Feedforward dimension of the transformer")
 
-    ##Use derivate
-    parser.add_argument("--use_derivative", "-dv",default=True,action='store_true',help="Use derivate")
+
 
     return parser.parse_args()
 
@@ -53,7 +53,7 @@ def main(args):
 
 
     if args.model_name is None:
-        model_name=f"transformer_{'ae_' if args.use_census else ''}{'dv_' if args.use_derivative else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
+        model_name=f"trf_{'ae_' if args.use_census else ''}{'dv_' if args.use_derivative else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
     else :
         model_name=args.model_name
 
@@ -68,10 +68,10 @@ def main(args):
     network =TransformerPredictor(
                                     experiment_dir=experiment_dir,
                                     emb_dim=args.emb_dim,
-                                  n_layers=args.n_layers,
-                                  n_head=args.n_head,
-                                  dim_feedforward=args.dim_feedforward,
-                                  use_encoder=args.use_census,
+                                      n_layers=args.n_layers,
+                                      n_head=args.n_head,
+                                      dim_feedforward=args.dim_feedforward,
+                                      use_census=args.use_census,
                                     max_seq_len=args.seq_len-1,
                                     reset=args.reset
                 ).to(DEVICE)
@@ -79,7 +79,7 @@ def main(args):
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(500*512/args.batch_size), factor=0.5, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(1000*512/args.batch_size), factor=0.5, verbose=True ,min_lr=1e-5)
 
     criterion= SmapeCriterion().to(DEVICE)
 
@@ -103,13 +103,15 @@ def main(args):
 
 
     if not os.path.exists(datasets_pickle_path):
-        train_dataset = LstmDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
-                                    use_census=args.use_census)
-        val_dataset = LstmDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
-                              use_census=args.use_census)
+        train_dataset = MicroDensityDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
+                                            use_census=args.use_census)
+        val_dataset = MicroDensityDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
+                                          use_census=args.use_census)
 
-        test_dataset = LstmDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
-                               use_census=args.use_census)
+        train_dataset.mix_with(val_dataset,size=0.8) #Mix train and val dataset to avoid disparity between the two in terms of dates distribution
+
+        test_dataset = MicroDensityDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
+                                           use_census=args.use_census)
 
         with open(datasets_pickle_path,"wb") as f:
             logging.info(f"Saving datasets to {datasets_pickle_path}")
@@ -118,6 +120,8 @@ def main(args):
         with open(datasets_pickle_path,"rb") as f:
             logging.info(f"Loading datasets  from {datasets_pickle_path}")
             train_dataset,val_dataset,test_dataset = pickle.load(f)
+
+
 
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 

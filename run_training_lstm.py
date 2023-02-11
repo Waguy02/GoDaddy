@@ -8,7 +8,7 @@ import torch.utils.data
 from constants import EXPERIMENTS_DIR, SEQ_LEN, SEQ_STRIDE, DEVICE, ROOT_DIR
 from losses.smape import SmapeCriterion
 from my_utils import DatasetType
-from dataset.lstm_dataset import LstmDataset
+from dataset.micro_densisty_dataset import MicroDensityDataset
 from logger import setup_logger
 from networks.lstm_predictor import LstmPredictor
 from networks.lstm_predictor2 import LstmPredictor2
@@ -22,18 +22,18 @@ def cli():
    @return:
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--reset", "-r", action='store_true', default=False, help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.1, help="Learning rate of Adam optimized")
-    parser.add_argument("--nb_epochs", "-e", type=int, default=20, help="Number of epochs for training")
+    parser.add_argument("--reset", "-r", action='store_true', default=True, help="Start retraining the model from scratch")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
+    parser.add_argument("--nb_epochs", "-e", type=int, default=120, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
-    parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
+    parser.add_argument("--batch_size", "-bs", type=int, default=1024, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
     parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
-    parser.add_argument("--seq_len", "-sl", type=int, default=7, help="Sequence length")
-    parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
-    parser.add_argument("--hidden_dim", "-hd", type=int, default=6, help="Hidden dimension of the LSTM")
+    parser.add_argument("--seq_len", "-sl", type=int, default=12, help="Sequence length")
+    parser.add_argument("--seq_stride", "-ss", type=int, default=1 , help="Sequence stride")
+    parser.add_argument("--hidden_dim", "-hd", type=int, default=4, help="Hidden dimension of the LSTM")
     parser.add_argument("--n_hidden_layers", "-nl", type=int, default=1, help="Number of hidden layers of the LSTM")
     parser.add_argument("--variante","-v",type=int,default=2,help="Variante of the model")
     parser.add_argument("--use_derivative", "-dv", default=True, action='store_true', help="Use derivate")
@@ -94,13 +94,13 @@ def main(args):
 
 
     if not os.path.exists(datasets_pickle_path):
-        train_dataset = LstmDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
-                                    use_census=args.use_census)
-        val_dataset = LstmDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
-                              use_census=args.use_census)
+        train_dataset = MicroDensityDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
+                                            use_census=args.use_census)
+        val_dataset = MicroDensityDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
+                                          use_census=args.use_census)
 
-        test_dataset = LstmDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
-                               use_census=args.use_census)
+        test_dataset = MicroDensityDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
+                                           use_census=args.use_census)
 
         with open(datasets_pickle_path,"wb") as f:
             logging.info(f"Saving datasets to {datasets_pickle_path}")

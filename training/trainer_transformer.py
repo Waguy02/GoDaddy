@@ -66,14 +66,14 @@ class TrainerTransformerPredictor:
 
     def fit(self,train_dataloader,val_dataloader):
         logging.info("Launch training on {}".format(DEVICE))
-        if self.network.use_census_encoder:
+        if self.network.use_census:
             logging.info("Using encoder census data")
 
         self.summary_writer = SummaryWriter(log_dir=self.experiment_dir)
         itr = self.start_epoch * len(train_dataloader) * self.batch_size  ##Global counter for steps
 
         #Save model graph
-        self.summary_writer.add_graph(self.network, next(iter(train_dataloader)).to(DEVICE)[:,:-1,:])
+        # self.summary_writer.add_graph(self.network, next(iter(train_dataloader)).to(DEVICE)[:,:-1,:])
 
         self.best_val_loss = 1e20  # infinity
         if os.path.exists(self.model_info_file):
@@ -149,9 +149,9 @@ class TrainerTransformerPredictor:
                 "seq_len": train_dataloader.dataset.seq_len,
                 "batch_size": train_dataloader.batch_size,
                 "stride": train_dataloader.dataset.stride,
-                "use_census": self.network.use_census_encoder,
+                "use_census": self.network.use_census,
                 "variante": self.network.variante_num,
-                "census_dim": -1 if not self.network.use_census_encoder else self.network.census_features_encoder.hidden_dim
+
             }
 
             logging.info("Epoch {} - Train loss: {:.4f} - Val loss: {:.4f}".format(epoch, running_loss.value, epoch_val_loss.value))

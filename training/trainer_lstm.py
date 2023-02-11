@@ -66,7 +66,7 @@ class TrainerLstmPredictor:
 
     def fit(self,train_dataloader,val_dataloader):
         logging.info("Launch training on {}".format(DEVICE))
-        if self.network.use_census_encoder:
+        if self.network.use_census:
             logging.info("Using encoder census data")
 
         self.summary_writer = SummaryWriter(log_dir=self.experiment_dir)
@@ -156,9 +156,9 @@ class TrainerLstmPredictor:
                 "seq_len": train_dataloader.dataset.seq_len,
                 "batch_size": train_dataloader.batch_size,
                 "stride": train_dataloader.dataset.stride,
-                "use_census": self.network.use_census_encoder,
+                "use_census": self.network.use_census,
                 "variante": self.network.variante_num,
-                "census_dim": -1 if not self.network.use_census_encoder else self.network.census_features_encoder.hidden_dim
+                "census_dim": -1 if not self.network.use_census else self.network.features_encoder.hidden_dim,
             }
 
             logging.info("Epoch {} - Train loss: {:.4f} - Val loss: {:.4f}".format(epoch, running_loss.value, epoch_val_loss.value))

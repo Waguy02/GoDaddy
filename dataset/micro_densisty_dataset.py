@@ -1,4 +1,6 @@
+import logging
 import os
+import random
 
 import pandas as pd
 import torch
@@ -11,8 +13,8 @@ from my_utils import DatasetType, extract_census_features, get_cfips_index
 EVAL_START_DATE = "2022-05-01"
 TEST_START_DATE =  "2022-11-01"
 
-
-class LstmDataset(Dataset):
+SEED=42
+class MicroDensityDataset(Dataset):
     def __init__(self, type, seq_len, stride=1,use_census=USE_CENSUS):
         self.type = type
         self.seq_len = seq_len
@@ -150,5 +152,19 @@ class LstmDataset(Dataset):
         return tensor
 
 
+
+    def mix_with(self, other_dataset, size=0.8):
+        """
+        Combine two datasets exemple a train dataset and test dataset
+        @param other_dataset:
+        @param size:
+        @return:
+        """
+
+        all_sequences= self.sequences + other_dataset.sequences
+        random.shuffle(all_sequences)
+        self.sequences=all_sequences[:int(len(all_sequences)*size)]
+        other_dataset.sequences=all_sequences[int(len(all_sequences)*size):]
+        logging.info("Combined dataset: {} sequences for train and {} sequences for test".format(len(self.sequences),len(other_dataset.sequences)))
 
 
