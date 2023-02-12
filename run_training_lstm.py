@@ -23,17 +23,17 @@ def cli():
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=True, help="Start retraining the model from scratch")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.01, help="Learning rate of Adam optimized")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=120, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
     parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=1024, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=False,action='store_true',help="Autorun tensorboard")
-    parser.add_argument("--use_census","-c",default=False,action='store_true',help="Use census data")
-    parser.add_argument("--seq_len", "-sl", type=int, default=12, help="Sequence length")
+    parser.add_argument("--use_census","-c",default=True,action='store_true',help="Use census data")
+    parser.add_argument("--seq_len", "-sl", type=int, default=10, help="Sequence length")
     parser.add_argument("--seq_stride", "-ss", type=int, default=1 , help="Sequence stride")
-    parser.add_argument("--hidden_dim", "-hd", type=int, default=4, help="Hidden dimension of the LSTM")
+    parser.add_argument("--hidden_dim", "-hd", type=int, default=6, help="Hidden dimension of the LSTM")
     parser.add_argument("--n_hidden_layers", "-nl", type=int, default=1, help="Number of hidden layers of the LSTM")
     parser.add_argument("--variante","-v",type=int,default=2,help="Variante of the model")
     parser.add_argument("--use_derivative", "-dv", default=True, action='store_true', help="Use derivate")
@@ -65,7 +65,7 @@ def main(args):
     elif args.variante == 2:
         NetworkClass = LstmPredictorWithAttention
 
-    network = NetworkClass(experiment_dir=experiment_dir, use_derivative=args.use_derivative, hidden_dim=4, n_hidden_layers=1, use_encoder=args.use_census,reset= args.reset).to(DEVICE)
+    network = NetworkClass(experiment_dir=experiment_dir, use_derivative=args.use_derivative, hidden_dim=4, n_hidden_layers=1, use_census=args.use_census,reset= args.reset).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
@@ -98,6 +98,8 @@ def main(args):
                                             use_census=args.use_census)
         val_dataset = MicroDensityDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
                                           use_census=args.use_census)
+
+        train_dataset.mix_with(val_dataset,size=0.8) #Mix train and val dataset to avoid disparity between the two in terms of dates distribution
 
         test_dataset = MicroDensityDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
                                            use_census=args.use_census)

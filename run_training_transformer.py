@@ -26,22 +26,22 @@ def cli():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--reset", "-r", action='store_true', default=False, help="Start retraining the model from scratch")
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
-    parser.add_argument("--nb_epochs", "-e", type=int, default=250, help="Number of epochs for training")
+    parser.add_argument("--nb_epochs", "-e", type=int, default=1000, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
-    parser.add_argument("--num_workers", "-w", type=int, default=0, help="Number of workers for data loading")
+    parser.add_argument("--num_workers", "-w", type=int, default=4, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=True,action='store_true',help="Autorun tensorboard")
     parser.add_argument("--use_census","-c",default=True, action='store_true',help="Use census data")
-    parser.add_argument("--use_derivative", "-dv", default=False, action='store_true', help="Use derivate")
-    parser.add_argument("--seq_len", "-sl", type=int, default=30, help="Sequence length")
+    parser.add_argument("--use_derivative", "-dv", default=True, action='store_true', help="Use derivate")
+    parser.add_argument("--seq_len", "-sl", type=int, default=10, help="Sequencedee length")
     parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
 
     ## Transformer arg
-    parser.add_argument("--emb_dim", "-ed", type=int, default=30, help="Embedding dimension of the transformer")
-    parser.add_argument("--n_layers", "-nl", type=int, default=6, help="Number of layers of the transformer")
-    parser.add_argument("--n_head", "-nh", type=int, default=6 ,help="Number of heads of the transformer")
-    parser.add_argument("--dim_feedforward", "-df", type=int, default=64, help="Feedforward dimension of the transformer")
+    parser.add_argument("--emb_dim", "-ed", type=int, default=18, help="Embedding dimension of the transformer")
+    parser.add_argument("--n_layers", "-nl", type=int, default=4, help="Number of layers of the transformer")
+    parser.add_argument("--n_head", "-nh", type=int, default=3, help="Number of heads of the transformer")
+    parser.add_argument("--dim_feedforward", "-df", type=int, default=256, help="Feedforward dimension of the transformer")
 
 
 
@@ -79,7 +79,7 @@ def main(args):
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(1000*512/args.batch_size), factor=0.5, verbose=True ,min_lr=1e-5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(300*512/args.batch_size), factor=0.5, verbose=True ,min_lr=1e-5)
 
     criterion= SmapeCriterion().to(DEVICE)
 
@@ -125,7 +125,7 @@ def main(args):
 
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
-    train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False)
+    train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=True)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1,num_workers=0,drop_last=False,shuffle=False)
 

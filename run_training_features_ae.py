@@ -22,7 +22,7 @@ def cli():
    @return:
    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--reset", "-r", action='store_true', default=False   , help="Start retraining the model from scratch")
+    parser.add_argument("--reset", "-r", action='store_true', default=True   , help="Start retraining the model from scratch")
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=40, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")

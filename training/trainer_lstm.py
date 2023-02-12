@@ -207,12 +207,9 @@ class TrainerLstmPredictor:
                 """
                 y_true = batch[:,:,-1]
 
-                nb_futures = min(val_dataloader.dataset.seq_len - 1, NB_FUTURES)
-                if self.network.variante_num == 2:  # Attention model: (single output)
-                    loss = self.loss_fn(y_pred, y_true[:, -nb_futures:])
-                else:
-                    y_pred = y_pred.squeeze()
-                    loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
+
+
+                loss = self.loss_fn(y_pred, y_true[:, -1:])
 
                 running_loss.send(loss.item())
 

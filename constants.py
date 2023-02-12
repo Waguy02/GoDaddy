@@ -34,7 +34,7 @@ FEATURES_AE_LATENT_DIM= 2
 TRAIN_FILE= os.path.join(DATA_DIR, "train.csv")
 TEST_FILE= os.path.join(DATA_DIR, "test.csv")
 
-CENSUS_FILE =os.path.join(DATA_DIR, "census_ae.csv")
+CENSUS_FILE =os.path.join(DATA_DIR, "census_interpolated.csv")
 
 NB_FUTURES= 10 #Number of days to predict
 

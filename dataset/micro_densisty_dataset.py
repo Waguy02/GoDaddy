@@ -48,15 +48,12 @@ class MicroDensityDataset(Dataset):
             self.test_df =self.test_df.sort_values(by=["cfips","first_day_of_month"])
             self.test_df = self.test_df.reset_index(drop=True)
 
-        self.main_df['year']=pd.to_datetime(self.main_df['first_day_of_month'].str.split("-", expand=True)[0])
-
-
         if self.use_census:
             #Merge the census features
             self.cfips_index=get_cfips_index()
             self.census_df = pd.read_csv(CENSUS_FILE)
-            self.census_df["year"]=pd.to_datetime(self.census_df["year"],format="%Y")
-            self.main_df=pd.merge(self.main_df,self.census_df,on=["cfips","year"],how="left")
+
+            self.main_df=pd.merge(self.main_df,self.census_df,on=["cfips","first_day_of_month"],how="left")
 
 
         ##Group by cfips and sort by date
@@ -118,8 +115,8 @@ class MicroDensityDataset(Dataset):
 
                 self.sequences.append((offset, offset + self.seq_len))
 
-        ##Update the type of the year column to int
-        self.main_df["year"]=self.main_df["year"].dt.year
+
+
 
 
 
@@ -148,6 +145,8 @@ class MicroDensityDataset(Dataset):
         if self.use_census:
             censur_features_tensor = extract_census_features(rows_data, cfips_index=self.cfips_index,single_row=False)
             tensor = torch.cat((censur_features_tensor,tensor), dim=1)
+
+
 
         return tensor
 

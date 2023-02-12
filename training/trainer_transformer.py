@@ -107,8 +107,8 @@ class TrainerTransformerPredictor:
                 1.Forward pass
                 """
                 batch = batch.to(DEVICE)
-                input = batch[:, :-1, :]
-                y_pred = self.network(input)
+
+                y_pred = self.network(batch)
                 ## The output is the values of the density for each time step
 
                 """
@@ -189,8 +189,7 @@ class TrainerTransformerPredictor:
                 1.Forward pass
                 """
                 batch=batch.to(DEVICE)
-                input=batch[:,:-1,:]
-                y_pred = self.network(input)
+                y_pred = self.network(batch)
                 """ 
                 2.Loss computation and other metrics
                 """
@@ -218,9 +217,9 @@ class TrainerTransformerPredictor:
         row_ids = []
         with torch.no_grad():
             self.network.eval()
-            for i, batch in enumerate(tqdm(test_dataloader," Running tests for submission")):
-                batch = batch.to(DEVICE)[:, :-1, :]
-                y_pred = self.network(batch).cpu().squeeze().item()
+            for i, input in enumerate(tqdm(test_dataloader," Running tests for submission")):
+                input = input.to(DEVICE)
+                y_pred = self.network(input.to(DEVICE)).cpu().squeeze().item()
 
                 # Denormalize. MEAN_MB, STD_MB (if noramlized)
                 # y_pred = y_pred * STD_MB + MEAN_MB
