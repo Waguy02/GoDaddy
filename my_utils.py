@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from constants import DATA_DIR, N_COUNTY
+from constants import DATA_DIR, N_COUNTY, N_DIMS_COUNTY_ENCODING
 
 
 def read_json(path_json):
@@ -86,35 +86,50 @@ class DatasetType(Enum):
 
 
 
-def extract_census_features(row,cfips_index):
+def extract_census_features(row,cfips_index,single_row=True):
     """
 
     @param row: Row of the dataframe
     @param cfips_index: index of the cfips for one-hot encoding
     @return:
     """
+    ##If series :
 
 
-    features_tensor = torch.tensor( [row['pct_bb'],
-                                    row['pct_college'],
-                                    row['pct_foreign_born'],
-                                    row['pct_it_workers'],
-                                    row['median_hh_inc'],
-                                    row['year']], dtype=torch.float32)
-    #Min-max normalization
-    features_tensor[0] = (features_tensor[0]- 24.5/ (97.6-24.5))
-    features_tensor[1] = (features_tensor[1] /48)
-    features_tensor[2] = (features_tensor[2]/ 54)
-    features_tensor[3] = (features_tensor[3] / 17.4)
-    features_tensor[4] = (features_tensor[4]- 17109/(1586821-17109))
-    features_tensor[5] = (features_tensor[5] / 2023)
+    if single_row:
+        features_tensor = torch.tensor( [row['pct_bb'],
+                                        row['pct_college'],
+                                        row['pct_foreign_born'],
+                                        row['pct_it_workers'],
+                                        row['median_hh_inc']
+                                        ], dtype=torch.float32)
+        cfips_one_hot = get_cfips_encoding(row['cfips'], cfips_index)
+        # Min-max normalization
+        features_tensor[ 0] = (features_tensor[ 0] - 24.5) / (97.6 - 24.5)
+        features_tensor[ 1] = (features_tensor[ 1] / 48)
+        features_tensor[ 2] = (features_tensor[ 2] / 54)
+        features_tensor[ 3] = (features_tensor[ 3] / 17.4)
+        features_tensor[ 4] = (features_tensor[ 4] - 17109) / (1586821 - 17109)
 
-    cfips_one_hot = get_cfips_one_hot(row['cfips'], cfips_index)
+    else :
+        features_tensor= torch.from_numpy(row[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc']].values)
+        row_one_hots= [get_cfips_encoding(cfips,cfips_index) for cfips in row['cfips']]
+        cfips_one_hot = torch.stack(row_one_hots)
+        #Min-max normalization
+        features_tensor[:,0] = (features_tensor[:,0]- 24.5)/ (97.6-24.5)
+        features_tensor[:,1] = (features_tensor[:,1] /48)
+        features_tensor[:,2] = (features_tensor[:,2]/ 54)
+        features_tensor[:,3] = (features_tensor[:,3] / 17.4)
+        features_tensor[:,4] = (features_tensor[:,4]- 17109)/(1586821-17109)
+
 
     ##Add one-hot encoding of cfips
-    features_tensor = torch.cat((cfips_one_hot,features_tensor), 0)
+    if single_row:
+        features_tensor = torch.cat((cfips_one_hot, features_tensor))
+    else:
+        features_tensor = torch.cat((cfips_one_hot,features_tensor), 1)
 
-    return features_tensor
+    return features_tensor.float()
 
 
 
@@ -125,18 +140,23 @@ def get_cfips_index():
     """
     Return a dictionary with key=cfips and value=index for using a one-hot encoding
     """
-    df= pd.read_csv(os.path.join(DATA_DIR, "census_ae.csv"))
+    df= pd.read_csv(os.path.join(DATA_DIR, "census_interpolated.csv"))
     cfips = df['cfips'].unique()
     cfips.sort()
     #Sort cfips
     return {cfips[i]: i for i in range(len(cfips))}
 
 
-def get_cfips_one_hot(cfips,cfips_index):
+def get_cfips_encoding(cfips,cfips_index):
     """
-    Return a one-hot  encoding of the cfips_index using torch
+     return the base 2 encoding of cfips
     """
-    assert len(cfips_index)==N_COUNTY,"The length of cfips_index must be equal to N_COUNTY"
-    one_hot=torch.zeros(N_COUNTY)
-    one_hot[cfips_index[cfips]]=1
-    return one_hot
+
+    #n_dims is the number of bits needed to represent the cfips
+
+    bin_index=np.binary_repr(cfips_index[cfips],width=N_DIMS_COUNTY_ENCODING)
+    enc = torch.tensor([int(x) for x in bin_index],dtype=torch.float32)
+    return enc
+
+
+

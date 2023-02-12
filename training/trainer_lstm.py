@@ -3,13 +3,14 @@ import json
 import logging
 import os
 import shutil
+import warnings
 
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from constants import DEVICE
+from constants import DEVICE, STD_MB, MEAN_MB, NB_FUTURES
 from my_utils import Averager
 
 
@@ -65,7 +66,7 @@ class TrainerLstmPredictor:
 
     def fit(self,train_dataloader,val_dataloader):
         logging.info("Launch training on {}".format(DEVICE))
-        if self.network.use_encoder:
+        if self.network.use_census:
             logging.info("Using encoder census data")
 
         self.summary_writer = SummaryWriter(log_dir=self.experiment_dir)
@@ -106,7 +107,7 @@ class TrainerLstmPredictor:
                 1.Forward pass
                 """
                 batch=batch.to(DEVICE)
-                y_pred = self.network(batch).squeeze()
+                y_pred = self.network(batch[:,:-1,:])  # [batch_size, seq_len, 1
                 ## The output is the values of the density for each time step
 
                 """
@@ -115,9 +116,14 @@ class TrainerLstmPredictor:
                 # The density is the last item of the batch
                 y_true = batch[:,:,-1]
 
-                # nb_futures= min(train_dataloader.dataset.seq_len-1,3)
-                nb_futures=train_dataloader.dataset.seq_len-1
-                loss=self.loss_fn(y_pred[:,-1-nb_futures:-1],y_true[:,-nb_futures:])
+                nb_futures = min(train_dataloader.dataset.seq_len - 1, NB_FUTURES)
+                if self.network.variante_num ==2:#Attention model: (single output)
+                    loss = self.loss_fn(y_pred, y_true[:, -nb_futures:])
+                else :
+                    y_pred=y_pred.squeeze()
+                    loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
+
+
 
                 """
                 3.Optimizing
@@ -132,8 +138,9 @@ class TrainerLstmPredictor:
                 """
                 4.Writing logs and tensorboard data, loss and other metrics
                 """
-                self.summary_writer.add_scalar("step_Train/loss", loss.item(), itr)
+                self.summary_writer.add_scalar("Train/loss", loss.item(), itr)
 
+                self.scheduler.step(loss.item())
 
 
             epoch_val_loss =self.eval(val_dataloader,epoch)
@@ -142,26 +149,38 @@ class TrainerLstmPredictor:
                 "epoch": epoch,
                 "train_loss":running_loss.value,
                 "val_loss":epoch_val_loss.value,
-                "lr": self.optimizer.param_groups[0]['lr']
+                "lr": self.optimizer.param_groups[0]['lr'],
+                "input_dim": self.network.input_dim,
+                "hidden_dim": self.network.hidden_dim,
+                "n_hidden_lstm_layers": self.network.n_hidden_layers,
+                "seq_len": train_dataloader.dataset.seq_len,
+                "batch_size": train_dataloader.batch_size,
+                "stride": train_dataloader.dataset.stride,
+                "use_census": self.network.use_census,
+                "variante": self.network.variante_num,
+                "census_dim": -1 if not self.network.use_census else self.network.features_encoder.hidden_dim,
             }
 
             logging.info("Epoch {} - Train loss: {:.4f} - Val loss: {:.4f}".format(epoch, running_loss.value, epoch_val_loss.value))
-
-            infos["hidden_dim"]=self.network.hidden_dim
-            infos["input_dim"]=self.network.input_dim
-            infos["use_census"]=self.network.use_encoder
-            infos["n_hidden_layers"]=self.network.n_hidden_layers
 
             if epoch_val_loss.value < self.best_val_loss:
                 self.best_val_loss = epoch_val_loss.value
                 best = True
             else:
                 best = False
+
             self.network.save_state(best=best)
             self.save_model_info(infos, best=best)
-            self.scheduler.step(epoch_val_loss.value)
-            self.summary_writer.add_scalar("epoch_train/loss", running_loss.value, epoch)
-            self.summary_writer.add_scalar("epoch_val/loss", epoch_val_loss.value, epoch)
+
+             # if scheduler is StepLR
+            # if isinstance(self.scheduler, torch.optim.lr_scheduler.StepLR):
+            #     self.scheduler.step()
+            # else:
+            #     self.scheduler.step(epoch_val_loss.value)
+
+            self.summary_writer.add_scalar("Epoch_train/loss", running_loss.value, epoch)
+            self.summary_writer.add_scalar("Epoch_val/loss", epoch_val_loss.value, epoch)
+
 
 
     def eval(self, val_dataloader,epoch):
@@ -172,7 +191,8 @@ class TrainerLstmPredictor:
         with torch.no_grad():
             self.network.eval()
             running_loss=Averager()
-            for _, batch in enumerate(tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")):
+            pbar = tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")
+            for _, batch in enumerate(pbar):
 
                 """
                 Training lopp
@@ -181,18 +201,65 @@ class TrainerLstmPredictor:
                 1.Forward pass
                 """
                 batch=batch.to(DEVICE)
-                y_pred = self.network(batch).squeeze()
+                y_pred = self.network(batch)
                 """ 
                 2.Loss computation and other metrics
                 """
                 y_true = batch[:,:,-1]
-                nb_futures = min(val_dataloader.dataset.seq_len - 1, 3)
-                # nb_futures=val_dataloader.dataset.seq_len
-                loss = self.loss_fn(y_pred[:, -1 - nb_futures:-1], y_true[:, -nb_futures:])
+
+
+
+                loss = self.loss_fn(y_pred, y_true[:, -1:])
 
                 running_loss.send(loss.item())
 
+                pbar.set_postfix(current_loss=loss.item(), current_mean_loss=running_loss.value)
 
         return running_loss
 
+
+
+    def run_test(self, test_dataloader):
+        """
+        Compute loss and metrics on a validation dataloader
+        @return:
+        """
+        assert test_dataloader.batch_size == 1, "Batch size must be 1 for test"
+        predictions = []
+        row_ids = []
+        with torch.no_grad():
+            self.network.eval()
+            for i, batch in enumerate(tqdm(test_dataloader," Running tests for submission")):
+                batch = batch.to(DEVICE)
+                y_pred = self.network(batch).cpu().squeeze().item()
+
+                # Denormalize. MEAN_MB, STD_MB (if noramlized)
+                # y_pred = y_pred * STD_MB + MEAN_MB
+                """ 
+                2.Loss computation and other metrics
+                """
+                predictions.append(y_pred)
+
+                ##Update all microbusiness_den isty column
+                row_id=test_dataloader.dataset.test_df.loc[i,"row_id"]
+                row_ids.append(row_id)
+
+                test_dataloader.dataset.main_df.loc[test_dataloader.dataset.main_df["row_id"]==row_id,"microbusiness_density"]=y_pred
+
+
+        #Merge predictions
+        predictions=np.array(predictions)
+
+
+        #Update all microbusiness_denisty column
+
+        pred_test_df = pd.DataFrame(
+            {
+                "row_id":row_ids,
+                 "microbusiness_density":predictions}
+
+                                )
+        pred_test_df.to_csv(os.path.join(self.experiment_dir,"submission.csv"),index=False)
+
+        return pred_test_df
 

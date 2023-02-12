@@ -30,7 +30,7 @@ class CensusDataset(Dataset):
         Returns:
 
         """
-        self.data_file=os.path.join(DATA_DIR,f"census_ae_{'train' if self.type == DatasetType.TRAIN else 'val'}.csv")
+        self.data_file=os.path.join(DATA_DIR,f"census_interpolated_{'train' if self.type == DatasetType.TRAIN else 'val'}.csv")
         self.data = pd.read_csv(self.data_file)
 
 
@@ -49,7 +49,6 @@ class CensusDataset(Dataset):
         """
         row=self.data.iloc[idx]
         features_tensor =extract_census_features(row, self.cfips_index)
-
         return features_tensor
 
 

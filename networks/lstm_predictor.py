@@ -1,10 +1,11 @@
+import json
 import logging
 import os
 import torch
 import torchvision.models
 from torch import nn
-from constants import ROOT_DIR, DEVICE, AE_LATENT_DIM, LSTM_HIDDEN_DIM, N_CENSUS_FEATURES, USE_CENSUS, EXPERIMENTS_DIR, \
-    FEATURES_AE_CENSUS_DIR
+from constants import ROOT_DIR, DEVICE, LSTM_HIDDEN_DIM, N_CENSUS_FEATURES, USE_CENSUS, EXPERIMENTS_DIR, \
+    FEATURES_AE_CENSUS_DIR, FEATURES_AE_LATENT_DIM
 from networks.features_autoencoder import FeaturesAENetwork
 
 
@@ -12,7 +13,7 @@ class LstmPredictor(nn.Module):
 
     def __init__(self, hidden_dim=LSTM_HIDDEN_DIM,
                  n_hidden_layers=1,
-                 use_encoder=USE_CENSUS,
+                 use_census=USE_CENSUS,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
         @param features_encoder :
@@ -26,11 +27,24 @@ class LstmPredictor(nn.Module):
 
         super(LstmPredictor, self).__init__()
 
+        self.variante_num=0
 
-        self.use_encoder = use_encoder
-        if self.use_encoder:
-            self.features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,load_best=True).to(DEVICE)
+        self.use_census  = use_census
+        if self.use_census:
+            #Get the hidden dimension of the encoder
+            config_encoder=os.path.join(FEATURES_AE_CENSUS_DIR,"model.json")
+            with open(config_encoder) as f:
+                config = json.load(f)
+                ae_hidden_dim = config["hidden_dim"]
+            self.features_encoder = FeaturesAENetwork(experiment_dir=FEATURES_AE_CENSUS_DIR,hidden_dim=ae_hidden_dim).to(DEVICE)
+
+            # self.features_encoder = FeaturesAENetwork(hidden_dim=FEATURES_AE_LATENT_DIM).to(DEVICE)
             self.input_dim = self.features_encoder.hidden_dim + 1
+
+            # # Freeze the encoder weights
+            # for param in self.features_encoder.parameters():
+            #     param.requires_grad = False
+
         else :
             self.features_encoder = None
             self.input_dim =1
@@ -56,11 +70,13 @@ class LstmPredictor(nn.Module):
         self.lstm=nn.LSTM(input_size=self.input_dim,hidden_size=self.hidden_dim,num_layers=self.n_hidden_layers,batch_first=True)
 
         self.regressor=nn.Sequential(
-            nn.Linear(self.hidden_dim,1)
+            nn.Linear(self.hidden_dim,8),
+            nn.ReLU(),
+            nn.Linear(8, 1)
             )
 
-        if self.use_encoder:
-            # Freeze the encoder weights
+        if self.use_census:
+            # Freeze the encoder weights/
             for param in self.features_encoder.parameters():
                 param.requires_grad = False
 
@@ -107,7 +123,7 @@ class LstmPredictor(nn.Module):
         @return:
         """
         #1. First apply the encoder to the first N_CENSUS8FEAUTRES features of each element in the sequence
-        if self.use_encoder:
+        if self.use_census:
             encoded_features = self.features_encoder.encode(input[:, :, :self.features_encoder.input_dim])
             input = torch.cat((encoded_features, input[:, :, self.features_encoder.input_dim:]), dim=-1)
 
