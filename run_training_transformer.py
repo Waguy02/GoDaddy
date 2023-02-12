@@ -28,7 +28,7 @@ def cli():
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=1000, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
-    parser.add_argument("--num_workers", "-w", type=int, default=4, help="Number of workers for data loading")
+    parser.add_argument("--num_workers", "-w", type=int, default=8, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=True,action='store_true',help="Autorun tensorboard")
@@ -38,7 +38,7 @@ def cli():
     parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
 
     ## Transformer arg
-    parser.add_argument("--emb_dim", "-ed", type=int, default=18, help="Embedding dimension of the transformer")
+    parser.add_argument("--emb_dim", "-de", type=int, default=18, help="Embedding dimension of the transformer")
     parser.add_argument("--n_layers", "-nl", type=int, default=4, help="Number of layers of the transformer")
     parser.add_argument("--n_head", "-nh", type=int, default=3, help="Number of heads of the transformer")
     parser.add_argument("--dim_feedforward", "-df", type=int, default=256, help="Feedforward dimension of the transformer")
@@ -126,7 +126,7 @@ def main(args):
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
     train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=True)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=args.num_workers,drop_last=False,persistent_workers=True)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1,num_workers=0,drop_last=False,shuffle=False)
 
     ##Train
