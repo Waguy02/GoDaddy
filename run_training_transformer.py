@@ -28,7 +28,7 @@ def cli():
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.001, help="Learning rate of Adam optimized")
     parser.add_argument("--nb_epochs", "-e", type=int, default=1000, help="Number of epochs for training")
     parser.add_argument("--model_name", "-n",help="Name of the model. If not specified, it will be automatically generated")
-    parser.add_argument("--num_workers", "-w", type=int, default=8, help="Number of workers for data loading")
+    parser.add_argument("--num_workers", "-w", type=int, default=6, help="Number of workers for data loading")
     parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=True,action='store_true',help="Autorun tensorboard")
@@ -79,7 +79,7 @@ def main(args):
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(300*512/args.batch_size), factor=0.5, verbose=True ,min_lr=1e-5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(300*512/args.batch_size), factor=0.5, verbose=True ,min_lr=1e-6)
 
     criterion= SmapeCriterion().to(DEVICE)
 
@@ -126,14 +126,14 @@ def main(args):
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
     train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=True)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=args.num_workers,drop_last=False,persistent_workers=True)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=2,drop_last=False,persistent_workers=True)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1,num_workers=0,drop_last=False,shuffle=False)
 
     ##Train
-    trainer.fit(train_dataloader,val_dataloader)
+    # trainer.fit(train_dataloader,val_dataloader)
 
     ##Load best model
-    trainer.network.load_state(best=True)
+    # trainer.network.load_state(best=True)
     trainer.run_test(test_dataloader=test_dataloader)
     
 
