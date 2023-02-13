@@ -193,7 +193,7 @@ class TransformerPredictor(nn.Module):
         # 3. Add the positional encoding
         X = self.positional_encoding(X)
 
-        # 4. Add a query token to the input. Encoding of the cfips. (It is the same for all the sequence)
+        # 4. Add a query token to the input.
         if self.use_census:
             X = torch.cat((query.unsqueeze(1), X), dim=1)
 

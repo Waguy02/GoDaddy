@@ -105,7 +105,7 @@ class MicroDensityDataset(Dataset):
 
                 offset=df.iloc[i]["id"]
 
-                offset = offset - self.seq_len  # The step to predict is the last one of the sequence
+                offset = offset - self.seq_len+1  # The step to predict is the last one of the sequence
 
 
                 ##check if the cfips is the same
