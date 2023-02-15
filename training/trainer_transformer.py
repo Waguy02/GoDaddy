@@ -130,11 +130,16 @@ class TrainerTransformerPredictor:
                 4.Writing logs and tensorboard data, loss and other metrics
                 """
                 self.summary_writer.add_scalar("Train/loss", loss.item(), itr)
-                self.scheduler.step(loss.item())
 
 
 
             epoch_val_loss =self.eval(val_dataloader,epoch)
+
+            #If step lr scheduler
+            if isinstance(self.scheduler,torch.optim.lr_scheduler.StepLR):
+                self.scheduler.step()
+            else:
+                self.scheduler.step(epoch_val_loss.value)
 
             infos = {
                 "epoch": epoch,
@@ -150,6 +155,7 @@ class TrainerTransformerPredictor:
                 "batch_size": train_dataloader.batch_size,
                 "stride": train_dataloader.dataset.stride,
                 "use_census": self.network.use_census,
+                "use_derivative": self.network.use_derivative,
                 "variante": self.network.variante_num,
 
             }

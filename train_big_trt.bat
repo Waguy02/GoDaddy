@@ -1,1 +1,1 @@
-python run_training_transformer.py -lr=0.001 -bs=1024 -c -dv -de=64 -nl=8 -nh=8 -df=256 -sl=20 -e=750
+python run_training_transformer.py -lr=0.001 -bs=256 -c -dv -de=128 -nl=8 -nh=8 -df=512 -sl=20 -e=530
