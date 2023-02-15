@@ -1,0 +1,6 @@
+Training : trf_ae_dv_ed.64_nl.8_nh.8_df.350_sl.30_ss.1_lr.0.001_bs.1024
+Combined dataset: 25079 sequences for train and 6270 sequences for test
+Saving datasets to D:\Projets\GoDaddy\dataset\pickle\all_dataset_30_1_True.pickle
+Nb sequences : Train 25079 - Val 6270 - Test 25080
+Launch training on cuda
+Using encoder census data

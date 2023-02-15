@@ -108,7 +108,7 @@ class TransformerPredictor(nn.Module):
         )
         self.transformer_decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
-                                       dropout=0.01,
+                                       dropout=0,
                                        batch_first=True),
             num_layers=self.n_layers,
         )

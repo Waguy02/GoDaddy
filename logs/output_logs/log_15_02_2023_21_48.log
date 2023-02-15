@@ -1,0 +1,187 @@
+Training : trf_ae_dv_ed.64_nl.6_nh.8_df.512_sl.10_ss.1_lr.0.001_bs.256
+Loading datasets  from D:\Projets\GoDaddy\dataset\pickle\all_dataset_10_1_True.pickle
+Nb sequences : Train 90914 - Val 3135 - Test 25080
+Launch training on cuda
+Using encoder census data
+Epoch 0 - Train loss: 12.8425 - Val loss: 10.6083
+Saving best model
+Epoch 1 - Train loss: 6.4197 - Val loss: 5.1776
+Saving best model
+Epoch 2 - Train loss: 5.4899 - Val loss: 4.2145
+Saving best model
+Epoch 3 - Train loss: 4.1279 - Val loss: 5.6126
+Epoch 4 - Train loss: 3.9447 - Val loss: 2.8415
+Saving best model
+Epoch 5 - Train loss: 3.8029 - Val loss: 3.9060
+Epoch 6 - Train loss: 3.6633 - Val loss: 3.8334
+Epoch 7 - Train loss: 3.4542 - Val loss: 3.6589
+Epoch 8 - Train loss: 3.0791 - Val loss: 2.4444
+Saving best model
+Epoch 9 - Train loss: 3.0673 - Val loss: 2.0737
+Saving best model
+Epoch 10 - Train loss: 2.9411 - Val loss: 3.0744
+Epoch 11 - Train loss: 3.0463 - Val loss: 1.9514
+Saving best model
+Epoch 12 - Train loss: 2.9775 - Val loss: 2.5964
+Epoch 13 - Train loss: 2.6813 - Val loss: 2.8183
+Epoch 14 - Train loss: 2.7668 - Val loss: 2.3894
+Epoch 15 - Train loss: 2.6376 - Val loss: 2.1291
+Epoch 16 - Train loss: 2.6451 - Val loss: 3.4836
+Epoch 17 - Train loss: 2.5939 - Val loss: 2.0242
+Epoch 18 - Train loss: 2.5031 - Val loss: 2.0631
+Epoch 19 - Train loss: 2.3433 - Val loss: 2.7565
+Epoch 20 - Train loss: 2.6450 - Val loss: 1.7140
+Saving best model
+Epoch 21 - Train loss: 2.3895 - Val loss: 1.7446
+Epoch 22 - Train loss: 2.3541 - Val loss: 2.5594
+Epoch 23 - Train loss: 2.3115 - Val loss: 2.1212
+Epoch 24 - Train loss: 2.3765 - Val loss: 2.1502
+Epoch 25 - Train loss: 2.2871 - Val loss: 1.7588
+Epoch 26 - Train loss: 2.4686 - Val loss: 1.7140
+Epoch 27 - Train loss: 2.2037 - Val loss: 2.0636
+Epoch 28 - Train loss: 2.3172 - Val loss: 1.8120
+Epoch 29 - Train loss: 2.3245 - Val loss: 2.0723
+Epoch 30 - Train loss: 2.2919 - Val loss: 1.8964
+Epoch 31 - Train loss: 2.2168 - Val loss: 2.5950
+Epoch 32 - Train loss: 2.2021 - Val loss: 1.5461
+Saving best model
+Epoch 33 - Train loss: 2.1982 - Val loss: 1.6893
+Epoch 34 - Train loss: 2.1131 - Val loss: 1.9183
+Epoch 35 - Train loss: 2.1598 - Val loss: 1.4817
+Saving best model
+Epoch 36 - Train loss: 2.0607 - Val loss: 1.7093
+Epoch 37 - Train loss: 2.2601 - Val loss: 1.6933
+Epoch 38 - Train loss: 2.0883 - Val loss: 2.5481
+Epoch 39 - Train loss: 2.1220 - Val loss: 1.9718
+Epoch 40 - Train loss: 2.1030 - Val loss: 1.5164
+Epoch 41 - Train loss: 2.2234 - Val loss: 1.8690
+Epoch 42 - Train loss: 2.1312 - Val loss: 2.0411
+Epoch 43 - Train loss: 2.0647 - Val loss: 1.7563
+Epoch 44 - Train loss: 2.0660 - Val loss: 1.4554
+Saving best model
+Epoch 45 - Train loss: 2.0892 - Val loss: 1.7770
+Epoch 46 - Train loss: 2.0692 - Val loss: 2.6049
+Epoch 47 - Train loss: 2.0808 - Val loss: 1.7571
+Epoch 48 - Train loss: 2.0773 - Val loss: 2.0268
+Epoch 49 - Train loss: 2.1002 - Val loss: 2.0107
+Epoch 50 - Train loss: 1.8967 - Val loss: 1.3845
+Saving best model
+Epoch 51 - Train loss: 1.8678 - Val loss: 1.4989
+Epoch 52 - Train loss: 1.8779 - Val loss: 1.8026
+Epoch 53 - Train loss: 1.8888 - Val loss: 1.4940
+Epoch 54 - Train loss: 1.8568 - Val loss: 1.3308
+Saving best model
+Epoch 55 - Train loss: 1.8692 - Val loss: 1.6302
+Epoch 56 - Train loss: 1.8712 - Val loss: 1.5326
+Epoch 57 - Train loss: 1.8612 - Val loss: 1.5056
+Epoch 58 - Train loss: 1.8717 - Val loss: 1.4071
+Epoch 59 - Train loss: 1.8807 - Val loss: 1.6529
+Epoch 60 - Train loss: 1.8902 - Val loss: 1.3693
+Epoch 61 - Train loss: 1.8540 - Val loss: 1.3945
+Epoch 62 - Train loss: 1.8758 - Val loss: 1.5160
+Epoch 63 - Train loss: 1.8483 - Val loss: 1.4266
+Epoch 64 - Train loss: 1.8703 - Val loss: 1.5467
+Epoch 65 - Train loss: 1.8334 - Val loss: 1.3442
+Epoch 66 - Train loss: 1.8807 - Val loss: 1.5628
+Epoch 67 - Train loss: 1.8569 - Val loss: 1.6724
+Epoch 68 - Train loss: 1.8497 - Val loss: 1.3249
+Saving best model
+Epoch 69 - Train loss: 1.8570 - Val loss: 1.4893
+Epoch 70 - Train loss: 1.8395 - Val loss: 1.4023
+Epoch 71 - Train loss: 1.8623 - Val loss: 1.6094
+Epoch 72 - Train loss: 1.8465 - Val loss: 1.5171
+Epoch 73 - Train loss: 1.8378 - Val loss: 1.4229
+Epoch 74 - Train loss: 1.8445 - Val loss: 1.3629
+Epoch 75 - Train loss: 1.8501 - Val loss: 1.2928
+Saving best model
+Epoch 76 - Train loss: 1.8398 - Val loss: 1.3758
+Epoch 77 - Train loss: 1.8362 - Val loss: 1.5679
+Epoch 78 - Train loss: 1.8557 - Val loss: 1.3369
+Epoch 79 - Train loss: 1.8313 - Val loss: 1.6547
+Epoch 80 - Train loss: 1.8580 - Val loss: 1.7980
+Epoch 81 - Train loss: 1.8699 - Val loss: 1.3429
+Epoch 82 - Train loss: 1.8531 - Val loss: 2.3789
+Epoch 83 - Train loss: 1.8557 - Val loss: 1.5338
+Epoch 84 - Train loss: 1.8396 - Val loss: 1.3514
+Epoch 85 - Train loss: 1.8308 - Val loss: 1.2681
+Saving best model
+Epoch 86 - Train loss: 1.8335 - Val loss: 1.3612
+Epoch 87 - Train loss: 1.8395 - Val loss: 1.3470
+Epoch 88 - Train loss: 1.8490 - Val loss: 1.3249
+Epoch 89 - Train loss: 1.8391 - Val loss: 1.3174
+Epoch 90 - Train loss: 1.8212 - Val loss: 1.5243
+Epoch 91 - Train loss: 1.8589 - Val loss: 1.2899
+Epoch 92 - Train loss: 1.8191 - Val loss: 1.4002
+Epoch 93 - Train loss: 1.8336 - Val loss: 1.3047
+Epoch 94 - Train loss: 1.8424 - Val loss: 1.5120
+Epoch 95 - Train loss: 1.8240 - Val loss: 1.4858
+Epoch 96 - Train loss: 1.8238 - Val loss: 1.8658
+Epoch 97 - Train loss: 1.8430 - Val loss: 1.5039
+Epoch 98 - Train loss: 1.8363 - Val loss: 1.3204
+Epoch 99 - Train loss: 1.8448 - Val loss: 1.4177
+Epoch 100 - Train loss: 1.7709 - Val loss: 1.2769
+Epoch 101 - Train loss: 1.7681 - Val loss: 1.2847
+Epoch 102 - Train loss: 1.7584 - Val loss: 1.2558
+Saving best model
+Epoch 103 - Train loss: 1.7617 - Val loss: 1.3116
+Epoch 104 - Train loss: 1.7556 - Val loss: 1.2463
+Saving best model
+Epoch 105 - Train loss: 1.7734 - Val loss: 1.2527
+Epoch 106 - Train loss: 1.7792 - Val loss: 1.2571
+Epoch 107 - Train loss: 1.7611 - Val loss: 1.2882
+Epoch 108 - Train loss: 1.7561 - Val loss: 1.2608
+Epoch 109 - Train loss: 1.7648 - Val loss: 1.3044
+Epoch 110 - Train loss: 1.7604 - Val loss: 1.2965
+Epoch 111 - Train loss: 1.7717 - Val loss: 1.4625
+Epoch 112 - Train loss: 1.7607 - Val loss: 1.2786
+Epoch 113 - Train loss: 1.7560 - Val loss: 1.4707
+Epoch 114 - Train loss: 1.7580 - Val loss: 1.3045
+Epoch 115 - Train loss: 1.7633 - Val loss: 1.4265
+Epoch 116 - Train loss: 1.7599 - Val loss: 1.3671
+Epoch 117 - Train loss: 1.7694 - Val loss: 1.2794
+Epoch 118 - Train loss: 1.7546 - Val loss: 1.2822
+Epoch 119 - Train loss: 1.7494 - Val loss: 1.3088
+Epoch 120 - Train loss: 1.7575 - Val loss: 1.3522
+Epoch 121 - Train loss: 1.7671 - Val loss: 1.2890
+Epoch 122 - Train loss: 1.7595 - Val loss: 1.2621
+Epoch 123 - Train loss: 1.7501 - Val loss: 1.2580
+Epoch 124 - Train loss: 1.7517 - Val loss: 1.2194
+Saving best model
+Epoch 125 - Train loss: 1.7616 - Val loss: 1.3444
+Epoch 126 - Train loss: 1.7487 - Val loss: 1.3562
+Epoch 127 - Train loss: 1.7468 - Val loss: 1.2557
+Epoch 128 - Train loss: 1.7562 - Val loss: 1.2853
+Epoch 129 - Train loss: 1.7523 - Val loss: 1.3165
+Epoch 130 - Train loss: 1.7557 - Val loss: 1.4455
+Epoch 131 - Train loss: 1.7613 - Val loss: 1.2562
+Epoch 132 - Train loss: 1.7585 - Val loss: 1.3904
+Epoch 133 - Train loss: 1.7476 - Val loss: 1.2701
+Epoch 134 - Train loss: 1.7525 - Val loss: 1.3321
+Epoch 135 - Train loss: 1.7378 - Val loss: 1.5032
+Epoch 136 - Train loss: 1.7541 - Val loss: 1.2721
+Epoch 137 - Train loss: 1.7554 - Val loss: 1.2870
+Epoch 138 - Train loss: 1.7422 - Val loss: 1.2960
+Epoch 139 - Train loss: 1.7552 - Val loss: 1.3736
+Epoch 140 - Train loss: 1.7487 - Val loss: 1.2282
+Epoch 141 - Train loss: 1.7408 - Val loss: 1.2817
+Epoch 142 - Train loss: 1.7408 - Val loss: 1.5391
+Epoch 143 - Train loss: 1.7418 - Val loss: 1.3020
+Epoch 144 - Train loss: 1.7484 - Val loss: 1.3447
+Epoch 145 - Train loss: 1.7634 - Val loss: 1.2765
+Epoch 146 - Train loss: 1.7637 - Val loss: 1.2704
+Epoch 147 - Train loss: 1.7500 - Val loss: 1.2958
+Epoch 148 - Train loss: 1.7571 - Val loss: 1.2759
+Epoch 149 - Train loss: 1.7352 - Val loss: 1.5027
+Epoch 150 - Train loss: 1.7135 - Val loss: 1.2280
+Epoch 151 - Train loss: 1.7098 - Val loss: 1.3409
+Epoch 152 - Train loss: 1.7089 - Val loss: 1.2583
+Epoch 153 - Train loss: 1.7155 - Val loss: 1.3675
+Epoch 154 - Train loss: 1.7141 - Val loss: 1.2390
+Epoch 155 - Train loss: 1.7139 - Val loss: 1.2335
+Epoch 156 - Train loss: 1.7131 - Val loss: 1.3335
+Epoch 157 - Train loss: 1.7119 - Val loss: 1.3231
+Epoch 158 - Train loss: 1.7194 - Val loss: 1.2793
+Epoch 159 - Train loss: 1.7185 - Val loss: 1.2606
+Epoch 160 - Train loss: 1.7100 - Val loss: 1.2773
+Epoch 161 - Train loss: 1.7189 - Val loss: 1.2883
+Epoch 162 - Train loss: 1.7104 - Val loss: 1.2232

@@ -1,0 +1,8 @@
+Loading model state : D:\Projets\GoDaddy\logs/experiments\trf_ae_dv_ed.128_nl.8_nh.8_df.512_sl.10_ss.1_lr.0.001_bs.256\trf_ae_dv_ed.128_nl.8_nh.8_df.512_sl.10_ss.1_lr.0.001_bs.256.pt
+Training : trf_ae_dv_ed.128_nl.8_nh.8_df.512_sl.10_ss.1_lr.0.001_bs.256
+Resuming from epoch 160
+Loading datasets  from D:\Projets\GoDaddy\dataset\pickle\all_dataset_10_1_True.pickle
+Nb sequences : Train 90914 - Val 3135 - Test 25080
+Launch training on cuda
+Using encoder census data
+Setting lr to 0.000125

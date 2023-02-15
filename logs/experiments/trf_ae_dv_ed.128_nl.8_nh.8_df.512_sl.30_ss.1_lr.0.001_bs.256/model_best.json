@@ -1,0 +1,17 @@
+{
+    "epoch": 266,
+    "train_loss": 1.284297753353508,
+    "val_loss": 1.6029617404937744,
+    "lr": 3.125e-05,
+    "input_dim": 7,
+    "emb_dim": 128,
+    "dim_feedforward": 512,
+    "n_head": 8,
+    "n_layers": 8,
+    "seq_len": 30,
+    "batch_size": 256,
+    "stride": 1,
+    "use_census": true,
+    "use_derivative": true,
+    "variante": 4
+}

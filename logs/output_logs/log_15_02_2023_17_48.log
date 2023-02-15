@@ -1,0 +1,21 @@
+Loading model state : D:\Projets\GoDaddy\logs/experiments\trf_ae_dv_ed.128_nl.8_nh.8_df.512_sl.10_ss.1_lr.0.001_bs.256\trf_ae_dv_ed.128_nl.8_nh.8_df.512_sl.10_ss.1_lr.0.001_bs.256.pt
+Training : trf_ae_dv_ed.128_nl.8_nh.8_df.512_sl.10_ss.1_lr.0.001_bs.256
+Resuming from epoch 160
+Loading datasets  from D:\Projets\GoDaddy\dataset\pickle\all_dataset_10_1_True.pickle
+Nb sequences : Train 90914 - Val 3135 - Test 25080
+Launch training on cuda
+Using encoder census data
+Setting lr to 0.001
+Epoch 160 - Train loss: 2.0701 - Val loss: 2.4315
+Epoch 161 - Train loss: 2.0384 - Val loss: 2.0227
+Epoch 162 - Train loss: 2.0317 - Val loss: 1.4851
+Epoch 163 - Train loss: 1.9976 - Val loss: 1.5787
+Epoch 164 - Train loss: 2.0072 - Val loss: 1.5016
+Epoch 165 - Train loss: 1.9482 - Val loss: 1.6958
+Epoch 166 - Train loss: 1.9750 - Val loss: 1.4834
+Epoch 167 - Train loss: 1.9728 - Val loss: 1.5213
+Epoch 168 - Train loss: 1.9707 - Val loss: 2.1382
+Epoch 169 - Train loss: 1.9988 - Val loss: 2.2804
+Epoch 170 - Train loss: 1.9601 - Val loss: 1.5753
+Epoch 171 - Train loss: 1.9541 - Val loss: 1.4400
+Epoch 172 - Train loss: 2.0019 - Val loss: 2.1431
