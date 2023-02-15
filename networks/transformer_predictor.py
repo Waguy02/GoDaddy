@@ -41,7 +41,7 @@ class TransformerPredictor(nn.Module):
                  dim_feedforward=128,
                  use_derivative=True,
                  use_census=USE_CENSUS,
-                 n_dims_census_emb=2,
+                 n_dims_census_emb=4,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
         @param features_encoder :
@@ -108,16 +108,15 @@ class TransformerPredictor(nn.Module):
         )
         self.transformer_decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
-                                       dropout=0,
+                                       dropout=0.01,
                                        batch_first=True),
             num_layers=self.n_layers,
-
         )
 
         if self.use_census:
             self.regressor = nn.Sequential(
                 nn.Linear(2 * self.emb_dim, 1024),
-                nn.ReLU(),
+                nn.Sigmoid(),
                 nn.Linear(1024, 1)
             )
 
@@ -177,7 +176,7 @@ class TransformerPredictor(nn.Module):
             d_right = torch.zeros((X.shape[0], X.shape[1], 1), device=DEVICE)
             d_right[:, :-1, -1] = X[:, 1:, -1] - X[:, :-1, -1]
 
-            X = torch.cat((d_left, X, d_right), dim=-1)  ## Adding the derivative to the input as a new feature
+            X = torch.cat((X, d_left,  d_right), dim=-1)  ## Adding the derivative to the input as a new feature
 
         if self.use_census:
             target = X[:, -1, :]  # Last element of the sequence is the target .
@@ -193,7 +192,7 @@ class TransformerPredictor(nn.Module):
         # 3. Add the positional encoding
         X = self.positional_encoding(X)
 
-        # 4. Add a query token to the input. Encoding of the cfips. (It is the same for all the sequence)
+        # 4. Add a query token to the input.
         if self.use_census:
             X = torch.cat((query.unsqueeze(1), X), dim=1)
 

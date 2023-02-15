@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS, TEST_FILE, CENSUS_FILE, MEAN_MB, STD_MB
 from my_utils import DatasetType, extract_census_features, get_cfips_index
-
-EVAL_START_DATE = "2022-05-01"
+random.seed(42)
+EVAL_START_DATE = "2022-10-01"
 TEST_START_DATE =  "2022-11-01"
 
 SEED=42
@@ -48,12 +48,17 @@ class MicroDensityDataset(Dataset):
             self.test_df =self.test_df.sort_values(by=["cfips","first_day_of_month"])
             self.test_df = self.test_df.reset_index(drop=True)
 
+            # Fill The missing value of active with last known value (for each cfips)
+            self.main_df["active"] = self.main_df.groupby("cfips")["active"].apply(lambda x: x.fillna(method="ffill"))
+
+
         if self.use_census:
             #Merge the census features
             self.cfips_index=get_cfips_index()
             self.census_df = pd.read_csv(CENSUS_FILE)
 
             self.main_df=pd.merge(self.main_df,self.census_df,on=["cfips","first_day_of_month"],how="left")
+
 
 
         ##Group by cfips and sort by date
@@ -105,7 +110,7 @@ class MicroDensityDataset(Dataset):
 
                 offset=df.iloc[i]["id"]
 
-                offset = offset - self.seq_len  # The step to predict is the last one of the sequence
+                offset = offset - self.seq_len+1  # The step to predict is the last one of the sequence
 
 
                 ##check if the cfips is the same
@@ -145,8 +150,6 @@ class MicroDensityDataset(Dataset):
         if self.use_census:
             censur_features_tensor = extract_census_features(rows_data, cfips_index=self.cfips_index,single_row=False)
             tensor = torch.cat((censur_features_tensor,tensor), dim=1)
-
-
 
         return tensor
 

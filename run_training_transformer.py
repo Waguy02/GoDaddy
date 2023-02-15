@@ -32,8 +32,8 @@ def cli():
     parser.add_argument("--batch_size", "-bs", type=int, default=256, help="Batch size for training")
     parser.add_argument("--log_level", "-l", type=str, default="INFO")
     parser.add_argument("--autorun_tb","-tb",default=True,action='store_true',help="Autorun tensorboard")
-    parser.add_argument("--use_census","-c",default=True, action='store_true',help="Use census data")
-    parser.add_argument("--use_derivative", "-dv", default=True, action='store_true', help="Use derivate")
+    parser.add_argument("--use_census","-c",default=False, action='store_true',help="Use census data")
+    parser.add_argument("--use_derivative", "-dv", default=False, action='store_true', help="Use derivate")
     parser.add_argument("--seq_len", "-sl", type=int, default=10, help="Sequencedee length")
     parser.add_argument("--seq_stride", "-ss", type=int, default=1, help="Sequence stride")
 
@@ -79,7 +79,7 @@ def main(args):
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=int(300*512/args.batch_size), factor=0.5, verbose=True ,min_lr=1e-5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
 
     criterion= SmapeCriterion().to(DEVICE)
 
@@ -103,15 +103,17 @@ def main(args):
 
 
     if not os.path.exists(datasets_pickle_path):
+
         train_dataset = MicroDensityDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
                                             use_census=args.use_census)
         val_dataset = MicroDensityDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
                                           use_census=args.use_census)
 
-        train_dataset.mix_with(val_dataset,size=0.8) #Mix train and val dataset to avoid disparity between the two in terms of dates distribution
-
         test_dataset = MicroDensityDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
                                            use_census=args.use_census)
+
+        # train_dataset.mix_with(val_dataset,size=0.8) #Mix train and val dataset to avoid disparity between the two in terms of dates distribution
+
 
         with open(datasets_pickle_path,"wb") as f:
             logging.info(f"Saving datasets to {datasets_pickle_path}")
@@ -125,8 +127,8 @@ def main(args):
 
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
-    train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=True)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=args.num_workers,drop_last=False,persistent_workers=True)
+    train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=args.num_workers>0)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1,num_workers=0,drop_last=False,shuffle=False)
 
     ##Train
