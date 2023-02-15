@@ -99,7 +99,7 @@ class TransformerPredictor(nn.Module):
 
         ##Positional encoding
         self.positional_encoding = PositionalEncoding(self.emb_dim, max_len=self.max_seq_len)
-        self.dropout = nn.Dropout(p=0.1)
+        self.dropout = nn.Dropout(p=0.005)
         self.transformer_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
                                        dropout=0,
@@ -112,6 +112,8 @@ class TransformerPredictor(nn.Module):
                                        batch_first=True),
             num_layers=self.n_layers,
         )
+
+
 
         if self.use_census:
             self.regressor = nn.Sequential(
@@ -196,7 +198,11 @@ class TransformerPredictor(nn.Module):
         if self.use_census:
             X = torch.cat((query.unsqueeze(1), X), dim=1)
 
+        X=self.dropout(X)
+
         # 4. Apply the transformer encoder to get the memory
+
+
         X = self.transformer_encoder(X)
 
         if self.use_census:
