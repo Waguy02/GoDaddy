@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from constants import DATA_DIR, N_COUNTY, N_DIMS_COUNTY_ENCODING
+from constants import DATA_DIR, N_COUNTY, N_DIMS_COUNTY_ENCODING, CENSUS_FEATURES
 
 
 def read_json(path_json):
@@ -86,38 +86,39 @@ class DatasetType(Enum):
 
 
 
-def extract_census_features(row,cfips_index,single_row=True):
+def extract_census_features(row, cfips_index ,single_row=True):
     """
 
     @param row: Row of the dataframe
-    @param cfips_index: index of the cfips for one-hot encoding
+    @param cfips_index: Index of cfips
     @return:
     """
     ##If series :
-
-
     if single_row:
         features_tensor = torch.tensor( [
-                                        row['pct_bb'],
-                                        row['pct_college'],
-                                        row['pct_foreign_born'],
-                                        row['pct_it_workers'],
-                                        row['median_hh_inc'],
-                                        row['active']
+                                        row[CENSUS_FEATURES[0]],
+                                        row[CENSUS_FEATURES[1]],
+                                        row[CENSUS_FEATURES[2]],
+                                        row[CENSUS_FEATURES[3]],
+                                        row[CENSUS_FEATURES[4]],
+                                        row[CENSUS_FEATURES[5]]
                                         ], dtype=torch.float32)
-        cfips_one_hot = get_cfips_encoding(row['cfips'], cfips_index)
+
+        cfips= row['cfips']
+        cfips_one_hot = get_cfips_encoding(cfips, cfips_index)
         # Min-max normalization
-        features_tensor[ 0] = (features_tensor[ 0] - 24.5) / (97.6 - 24.5)
-        features_tensor[ 1] = (features_tensor[ 1] / 48)
-        features_tensor[ 2] = (features_tensor[ 2] / 54)
-        features_tensor[ 3] = (features_tensor[ 3] / 17.4)
-        features_tensor[ 4] = (features_tensor[ 4] - 17109) / (1586821 - 17109)
-        features_tensor[5] = (features_tensor[5]/1167744)
+        features_tensor[0] = (features_tensor[0] - 24.5) / (97.6 - 24.5)
+        features_tensor[1] = (features_tensor[1] / 48)
+        features_tensor[2] = (features_tensor[2] / 54)
+        features_tensor[3] = (features_tensor[3] / 17.4)
+        features_tensor[4] = (features_tensor[4] - 17109) / (1586821 - 17109)
+        features_tensor[5] = (features_tensor[5] / 1167744)
 
     else :
-        features_tensor= torch.from_numpy(row[['pct_bb', 'pct_college', 'pct_foreign_born', 'pct_it_workers', 'median_hh_inc','active']].values)
-        row_one_hots= [get_cfips_encoding(cfips,cfips_index) for cfips in row['cfips']]
-        cfips_one_hot = torch.stack(row_one_hots)
+        features_tensor= torch.from_numpy(row[CENSUS_FEATURES].values)
+        cfips= row['cfips'].iloc[0]
+        cfips_one_hot= get_cfips_encoding(cfips,cfips_index).repeat(features_tensor.shape[0],1)
+        # cfips_one_hot = torch.stack(row_one_hots)
         #Min-max normalization
         features_tensor[:,0] = (features_tensor[:,0]- 24.5)/ (97.6-24.5)
         features_tensor[:,1] = (features_tensor[:,1] /48)

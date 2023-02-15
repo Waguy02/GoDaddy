@@ -50,7 +50,7 @@ class MicroDensityDataset(Dataset):
 
             # Fill The missing value of active with last known value (for each cfips)
             self.main_df["active"] = self.main_df.groupby("cfips")["active"].apply(lambda x: x.fillna(method="ffill"))
-
+            pass
 
         if self.use_census:
             #Merge the census features
