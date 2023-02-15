@@ -12,7 +12,7 @@ use_cuda = torch .cuda.is_available()
 DEVICE = torch.device("cuda" if use_cuda else "cpu")
 
 
-N_CENSUS_FEATURES= 5 #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc
+N_CENSUS_FEATURES= 6 #pct_bb,pct_college,pct_foreign_born,pct_it_workers,median_hh_inc,active
 #cfips is not considered as a feature we use a one-hot encoding for it
 
 
