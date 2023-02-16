@@ -23,6 +23,8 @@ class MicroDensityDataset(Dataset):
         self.load_data()
         self.prepare_sequences()
 
+        if type!=DatasetType.TEST:
+            self.prepare_tensors()
 
     def init_transforms(self):
         """
@@ -121,7 +123,11 @@ class MicroDensityDataset(Dataset):
                 self.sequences.append((offset, offset + self.seq_len))
 
 
-
+    def prepare_tensors(self):
+        self.tensor_list=dict()
+        for i in tqdm(range(len(self.sequences)), desc="Prefetching tensors..."):
+            start,end=self.sequences[i]
+            self.tensor_list[(start,end)]=self.__getitem__(i)
 
 
 
@@ -135,6 +141,10 @@ class MicroDensityDataset(Dataset):
         2. And the difference between the date(first_day_of_month) should be at most 3 months
         """
         start,end=self.sequences[item]
+
+        if (start,end) in self.tensor_list:
+            return self.tensor_list[(start,end)]
+
         rows_data=self.main_df.iloc[start:end]
 
 
