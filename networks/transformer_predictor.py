@@ -42,6 +42,7 @@ class TransformerPredictor(nn.Module):
                  use_derivative=True,
                  use_census=USE_CENSUS,
                  n_dims_census_emb=4,
+                 dropout_rate=0.01,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
         @param features_encoder :
@@ -65,6 +66,7 @@ class TransformerPredictor(nn.Module):
         self.n_dims_census_emb = n_dims_census_emb
         self.input_dim = 1
         self.use_derivative = use_derivative
+        self.dropout_rate = dropout_rate
         if self.use_derivative:
             self.input_dim += 2  # 2 for derivative
 
@@ -79,6 +81,24 @@ class TransformerPredictor(nn.Module):
         self.setup_network()
 
         if not reset: self.load_state()
+
+    def load_from_config(config,reset=False,load_best=True):
+        return TransformerPredictor(
+            emb_dim=config["emb_dim"],
+            n_layers=config["n_layers"],
+            n_head=config["n_head"],
+            max_seq_len=config["seq_len"],
+            dim_feedforward=config["dim_feedforward"],
+            use_derivative=config["use_derivative"],
+            use_census=config["use_census"],
+            dropout_rate=config["dropout_rate"],
+            experiment_dir=config["experiment_dir"],
+            n_dims_census_emb=config["n_dims_census_emb"],
+            reset=reset,
+            load_best=load_best
+        )
+
+
 
     ##1. Defining network architecture
     def setup_network(self):
@@ -99,7 +119,7 @@ class TransformerPredictor(nn.Module):
 
         ##Positional encoding
         self.positional_encoding = PositionalEncoding(self.emb_dim, max_len=self.max_seq_len)
-        self.dropout = nn.Dropout(p=0.005)
+        self.dropout = nn.Dropout(p=self.dropout_rate)
         self.transformer_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
                                        dropout=0,

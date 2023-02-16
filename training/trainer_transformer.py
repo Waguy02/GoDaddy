@@ -157,7 +157,8 @@ class TrainerTransformerPredictor:
                 "use_census": self.network.use_census,
                 "use_derivative": self.network.use_derivative,
                 "variante": self.network.variante_num,
-
+                "dropout_rate": self.network.dropout_rate,
+                "n_dims_census_emb": self.network.n_dims_census_emb,
             }
 
             logging.info("Epoch {} - Train loss: {:.4f} - Val loss: {:.4f}".format(epoch, running_loss.value, epoch_val_loss.value))

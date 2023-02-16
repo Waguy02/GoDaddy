@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import os
 import pickle
@@ -42,7 +43,8 @@ def cli():
     parser.add_argument("--n_layers", "-nl", type=int, default=4, help="Number of layers of the transformer")
     parser.add_argument("--n_head", "-nh", type=int, default=3, help="Number of heads of the transformer")
     parser.add_argument("--dim_feedforward", "-df", type=int, default=256, help="Feedforward dimension of the transformer")
-
+    parser.add_argument("--dropout", "-do", type=float, default=0.05, help="Dropout of the transformer")
+    parser.add_argument("--dim_census_embedding", "-dce", type=int, default=8, help="Census embedding dimension")
 
 
     return parser.parse_args()
@@ -53,7 +55,8 @@ def main(args):
 
 
     if args.model_name is None:
-        model_name=f"trf_{'ae_' if args.use_census else ''}{'dv_' if args.use_derivative else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}_sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}"
+        model_name=f"trf_{'ae_' if args.use_census else ''}{'dv_' if args.use_derivative else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}\
+        _sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}_do.{args.dropout}"
     else :
         model_name=args.model_name
 
@@ -62,25 +65,32 @@ def main(args):
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
 
 
-    # Setup logger
+    #Try to load an existing config
+    if os.path.exists(os.path.join(experiment_dir,"model.json")):
+        logging.info("Loading existing config")
+        config=json.load(open(os.path.join(experiment_dir,"model.json")))
+        network = TransformerPredictor.load_from_config(config,reset=args.reset)
 
 
-    network =TransformerPredictor(
-                                    experiment_dir=experiment_dir,
-                                    emb_dim=args.emb_dim,
-                                      n_layers=args.n_layers,
-                                      n_head=args.n_head,
-                                      dim_feedforward=args.dim_feedforward,
-                                      use_census=args.use_census,
-                                    max_seq_len=args.seq_len-1,
-                                    reset=args.reset
-                ).to(DEVICE)
+    else :
+        network =TransformerPredictor(
+                                        experiment_dir=experiment_dir,
+                                        emb_dim=args.emb_dim,
+                                          n_layers=args.n_layers,
+                                          n_head=args.n_head,
+                                          dim_feedforward=args.dim_feedforward,
+                                          use_census=args.use_census,
+                                        max_seq_len=args.seq_len-1,
+                                        reset=args.reset,
+                                        dropout_rate=args.dropout,
+                                        n_dims_census_emb=args.dim_census_embedding,
+                    ).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.7,verbose=True)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=40, verbose=True,min_lr=5*1e-6)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.7, patience=30, verbose=True,min_lr=5*1e-6)
     criterion= SmapeCriterion().to(DEVICE)
 
 
