@@ -101,7 +101,9 @@ class TrainerTransformerPredictor:
                 """
                 Training lopp
                 """
-                self.optimizer.zero_grad()
+                self.optimizer.zero_grad(
+
+                )
                 itr += self.batch_size
                 """
                 1.Forward pass
@@ -146,20 +148,12 @@ class TrainerTransformerPredictor:
                 "train_loss":running_loss.value,
                 "val_loss":epoch_val_loss.value,
                 "lr": self.optimizer.param_groups[0]['lr'],
-                "input_dim": self.network.input_dim,
-                "emb_dim": self.network.emb_dim,
-                "dim_feedforward": self.network.dim_feedforward,
-                "n_head": self.network.n_head,
-                "n_layers": self.network.n_layers,
-                "seq_len": train_dataloader.dataset.seq_len,
                 "batch_size": train_dataloader.batch_size,
                 "stride": train_dataloader.dataset.stride,
-                "use_census": self.network.use_census,
-                "use_derivative": self.network.use_derivative,
-                "variante": self.network.variante_num,
-                "dropout_rate": self.network.dropout_rate,
-                "n_dims_census_emb": self.network.n_dims_census_emb,
+
             }
+            infos.update(self.network.config)
+
 
             logging.info("Epoch {} - Train loss: {:.4f} - Val loss: {:.4f}".format(epoch, running_loss.value, epoch_val_loss.value))
 

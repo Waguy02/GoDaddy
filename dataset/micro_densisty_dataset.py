@@ -23,6 +23,7 @@ class MicroDensityDataset(Dataset):
         self.load_data()
         self.prepare_sequences()
 
+        self.tensor_list = dict()
         if type!=DatasetType.TEST:
             self.prepare_tensors()
 
@@ -124,7 +125,7 @@ class MicroDensityDataset(Dataset):
 
 
     def prepare_tensors(self):
-        self.tensor_list=dict()
+
         for i in tqdm(range(len(self.sequences)), desc="Prefetching tensors..."):
             start,end=self.sequences[i]
             self.tensor_list[(start,end)]=self.__getitem__(i)
