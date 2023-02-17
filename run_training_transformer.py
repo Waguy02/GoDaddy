@@ -43,54 +43,60 @@ def cli():
     parser.add_argument("--n_layers", "-nl", type=int, default=4, help="Number of layers of the transformer")
     parser.add_argument("--n_head", "-nh", type=int, default=3, help="Number of heads of the transformer")
     parser.add_argument("--dim_feedforward", "-df", type=int, default=256, help="Feedforward dimension of the transformer")
-    parser.add_argument("--dropout", "-do", type=float, default=0.05, help="Dropout of the transformer")
-    parser.add_argument("--dim_census_embedding", "-dce", type=int, default=8, help="Census embedding dimension")
+    parser.add_argument("--dropout_rate", "-do", type=float, default=0.05, help="Dropout of the transformer")
+    parser.add_argument("--census_emb_dim", "-dce", type=int, default=4, help="Census embedding dimension")
 
 
     return parser.parse_args()
 
 def main(args):
 
-    #Format the model name
-
+    #Format the model nam
 
     if args.model_name is None:
-        model_name=f"trf_{'ae_' if args.use_census else ''}{'dv_' if args.use_derivative else ''}ed.{args.emb_dim}_nl.{args.n_layers}_nh.{args.n_head}_df.{args.dim_feedforward}\
-        _sl.{args.seq_len}_ss.{args.seq_stride}_lr.{args.learning_rate}_bs.{args.batch_size}_do.{args.dropout}"
+        model_name = TransformerPredictor.format_model_name(
+            use_census=args.use_census,
+            use_derivative=args.use_derivative,
+            emb_dim=args.emb_dim,
+            census_emb_dim=args.census_emb_dim,
+            n_layers=args.n_layers,
+            n_head=args.n_head,
+            dim_feedforward=args.dim_feedforward,
+            seq_len=args.seq_len,
+            seq_stride=args.seq_stride,
+            learning_rate=args.learning_rate,
+            batch_size=args.batch_size,
+            dropout_rate=args.dropout_rate
+        )
     else :
         model_name=args.model_name
 
-
-
     experiment_dir = os.path.join(EXPERIMENTS_DIR, model_name)
-
-
     #Try to load an existing config
-    if os.path.exists(os.path.join(experiment_dir,"model.json")):
+    if not args.reset and os.path.exists(os.path.join(experiment_dir,"model.json")):
         logging.info("Loading existing config")
         config=json.load(open(os.path.join(experiment_dir,"model.json")))
-        network = TransformerPredictor.load_from_config(config,reset=args.reset)
-
-
+        network = TransformerPredictor.build_from_config(config, experiment_dir, reset=False, load_best=False).to(DEVICE)
+        args.seq_len=config["seq_len"]
+        args.seq_stride=config["stride"]
+        args.use_census=config["use_census"]
     else :
-        network =TransformerPredictor(
-                                        experiment_dir=experiment_dir,
-                                        emb_dim=args.emb_dim,
-                                          n_layers=args.n_layers,
-                                          n_head=args.n_head,
-                                          dim_feedforward=args.dim_feedforward,
-                                          use_census=args.use_census,
-                                        max_seq_len=args.seq_len-1,
-                                        reset=args.reset,
-                                        dropout_rate=args.dropout,
-                                        n_dims_census_emb=args.dim_census_embedding,
-                    ).to(DEVICE)
+        network =TransformerPredictor(experiment_dir=experiment_dir,
+                                      emb_dim=args.emb_dim,
+                                      n_layers=args.n_layers,
+                                      n_head=args.n_head,
+                                      dim_feedforward=args.dim_feedforward,
+                                      use_census=args.use_census,
+                                      max_seq_len=args.seq_len-1,
+                                      reset=args.reset,
+                                      dropout_rate=args.dropout_rate,
+                                      census_emb_dim=args.census_emb_dim, ).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.7,verbose=True)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.7, patience=30, verbose=True,min_lr=5*1e-6)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.4,verbose=True)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=30,cooldown=25, verbose=True,min_lr=5e-6)
     criterion= SmapeCriterion().to(DEVICE)
 
 
@@ -105,7 +111,6 @@ def main(args):
                       )
 
     # Save  the dataset according to type, seq_len_stride and use_census: using pickle
-
     if not os.path.exists(os.path.join(ROOT_DIR,"dataset","pickle")):
         os.makedirs(os.path.join(ROOT_DIR,"dataset","pickle"))
 
@@ -116,6 +121,7 @@ def main(args):
 
         train_dataset = MicroDensityDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
                                             use_census=args.use_census)
+        #Direclty send the tensor to the device
         val_dataset = MicroDensityDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
                                           use_census=args.use_census)
 
@@ -137,8 +143,10 @@ def main(args):
 
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
-    train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=args.num_workers>0)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=False)
+    train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=args.num_workers>0,pin_memory=True)
+    # train_dataset.tensor_list = [tensor.to(DEVICE) for tensor in train_dataset.tensor_list.values()]
+
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=True,pin_memory=True)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1,num_workers=0,drop_last=False,shuffle=False)
 
     ##Train
@@ -147,7 +155,7 @@ def main(args):
     ##Load best model
     trainer.network.load_state(best=True)
     trainer.run_test(test_dataloader=test_dataloader)
-    
+
 
 if __name__ == "__main__":
     args = cli()
