@@ -46,7 +46,7 @@ def cli():
     parser.add_argument("--dropout_rate", "-do", type=float, default=0.05, help="Dropout of the transformer")
     parser.add_argument("--census_emb_dim", "-dce", type=int, default=4, help="Census embedding dimension")
 
-
+    parser.add_argument("--test_only", "-i", default=False, action='store_true', help="Inference mode")
     return parser.parse_args()
 
 def main(args):
@@ -121,7 +121,7 @@ def main(args):
 
         train_dataset = MicroDensityDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
                                             use_census=args.use_census)
-        #Direclty send the tensor to the device
+
         val_dataset = MicroDensityDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
                                           use_census=args.use_census)
 
@@ -138,19 +138,20 @@ def main(args):
         with open(datasets_pickle_path,"rb") as f:
             logging.info(f"Loading datasets  from {datasets_pickle_path}")
             train_dataset,val_dataset,test_dataset = pickle.load(f)
-
+            test_dataset.tensor_list=dict()
 
 
     logging.info(f"Nb sequences : Train {len(train_dataset)} - Val {len(val_dataset)} - Test {len(test_dataset)}")
 
     train_dataloader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,num_workers=args.num_workers,shuffle=True,drop_last=False,persistent_workers=args.num_workers>0,pin_memory=True)
-    # train_dataset.tensor_list = [tensor.to(DEVICE) for tensor in train_dataset.tensor_list.values()]
+
 
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size,num_workers=0,drop_last=True,pin_memory=True)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1,num_workers=0,drop_last=False,shuffle=False)
 
     ##Train
-    trainer.fit(train_dataloader,val_dataloader)
+    if not args.test_only:
+        trainer.fit(train_dataloader,val_dataloader)
 
     ##Load best model
     trainer.network.load_state(best=True)
