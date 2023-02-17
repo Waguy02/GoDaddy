@@ -25,9 +25,11 @@ class PositionalEncoding(nn.Module):
         # COnvert to nn.Parameter
         self.pe = nn.Parameter(self.pe, requires_grad=False)
 
+
+
     def forward(self, x):
         # Add positional encoding to the input (Pay attention to the dimensions (the pe does not have the batch dimension))
-        x = x + self.pe[:x.size(0), :]
+        x = x + self.pe[:x.size(1), :]
         return x
 
 
@@ -41,7 +43,8 @@ class TransformerPredictor(nn.Module):
                  dim_feedforward=128,
                  use_derivative=True,
                  use_census=USE_CENSUS,
-                 n_dims_census_emb=4,
+                 census_emb_dim=4,
+                 dropout_rate=0.01,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
         @param features_encoder :
@@ -62,14 +65,15 @@ class TransformerPredictor(nn.Module):
         self.use_census = use_census
         self.max_seq_len = max_seq_len
         self.census_features_encoder = None
-        self.n_dims_census_emb = n_dims_census_emb
+        self.census_emb_dim = census_emb_dim
         self.input_dim = 1
         self.use_derivative = use_derivative
+        self.dropout_rate = dropout_rate
         if self.use_derivative:
             self.input_dim += 2  # 2 for derivative
 
         if self.use_census:
-            self.input_dim = self.input_dim + self.n_dims_census_emb
+            self.input_dim = self.input_dim + self.census_emb_dim
 
         self.experiment_dir = experiment_dir
         self.model_name = os.path.basename(self.experiment_dir)
@@ -78,7 +82,30 @@ class TransformerPredictor(nn.Module):
         self.setup_dirs()
         self.setup_network()
 
+
         if not reset: self.load_state()
+
+    def format_model_name(use_census, use_derivative, emb_dim, census_emb_dim, n_layers, n_head, dim_feedforward, seq_len, seq_stride, learning_rate, batch_size, dropout_rate):
+        model_name = f"trf_{'ae_' if use_census else ''}{'dv_' if use_derivative else ''}ed.{emb_dim}{'_dce.' + str(census_emb_dim) if use_census else ''}_nl.{n_layers}_nh.{n_head}_df.{dim_feedforward}_sl.{seq_len}_ss.{seq_stride}_lr.{learning_rate}_bs.{batch_size}_do.{dropout_rate}"
+        return model_name
+
+    def build_from_config(config, experiment_dir, reset=False, load_best=True):
+        return TransformerPredictor(
+            emb_dim=config["emb_dim"],
+            n_layers=config["n_layers"],
+            n_head=config["n_head"],
+            max_seq_len=config["seq_len"]-1,
+            dim_feedforward=config["dim_feedforward"],
+            use_derivative=config["use_derivative"],
+            use_census=config["use_census"],
+            dropout_rate=config["dropout_rate"],
+            census_emb_dim=config["census_emb_dim"],
+            reset=reset,
+            load_best=load_best,
+            experiment_dir=experiment_dir,
+        )
+
+
 
     ##1. Defining network architecture
     def setup_network(self):
@@ -90,7 +117,7 @@ class TransformerPredictor(nn.Module):
         if self.use_census:
             self.query_encoder = nn.Sequential(nn.Linear(N_DIMS_COUNTY_ENCODING + N_CENSUS_FEATURES, self.emb_dim))
             self.census_features_encoder = nn.Sequential(
-                nn.Linear(N_CENSUS_FEATURES, self.n_dims_census_emb),
+                nn.Linear(N_CENSUS_FEATURES, self.census_emb_dim),
             )
 
         self.input_embedding = nn.Sequential(
@@ -99,7 +126,7 @@ class TransformerPredictor(nn.Module):
 
         ##Positional encoding
         self.positional_encoding = PositionalEncoding(self.emb_dim, max_len=self.max_seq_len)
-        self.dropout = nn.Dropout(p=0.005)
+        self.dropout = nn.Dropout(p=self.dropout_rate)
         self.transformer_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
                                        dropout=0,
@@ -109,6 +136,7 @@ class TransformerPredictor(nn.Module):
         self.transformer_decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
                                        dropout=0,
+
                                        batch_first=True),
             num_layers=self.n_layers,
         )
@@ -117,15 +145,31 @@ class TransformerPredictor(nn.Module):
 
         if self.use_census:
             self.regressor = nn.Sequential(
-                nn.Linear(2 * self.emb_dim, 1024),
-                nn.Sigmoid(),
-                nn.Linear(1024, 1)
+                nn.Linear(2*self.emb_dim, 2048),
+                nn.ReLU(),
+                self.dropout,
+                nn.Linear(2048, 1)
             )
 
         else:
             self.regressor = nn.Sequential(
                 nn.Linear(self.emb_dim, 1)
             )
+
+        self.config={
+            "use_census":self.use_census,
+            "use_derivative":self.use_derivative,
+            "emb_dim":self.emb_dim,
+            "census_emb_dim":self.census_emb_dim,
+            "n_layers":self.n_layers,
+            "n_head":self.n_head,
+            "dim_feedforward":self.dim_feedforward,
+            "seq_len":self.max_seq_len+1,
+            "dropout_rate":self.dropout_rate,
+            "experiment_dir":self.experiment_dir,
+            "variante":self.variante_num,
+            "input_dim":self.input_dim,
+        }
 
     ##2. Model Saving/Loading
     def load_state(self, best=False):
@@ -198,7 +242,7 @@ class TransformerPredictor(nn.Module):
         if self.use_census:
             X = torch.cat((query.unsqueeze(1), X), dim=1)
 
-        X=self.dropout(X)
+
 
         # 4. Apply the transformer encoder to get the memory
 

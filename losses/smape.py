@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torchmetrics import SymmetricMeanAbsolutePercentageError
 
 
 class SmapeCriterion(nn.Module):
@@ -8,6 +9,7 @@ class SmapeCriterion(nn.Module):
     """
     def __init__(self):
         super(SmapeCriterion, self).__init__()
+        self.smape = SymmetricMeanAbsolutePercentageError()
 
     def forward(self, y_pred, y_true):
         """
@@ -15,8 +17,7 @@ class SmapeCriterion(nn.Module):
         @param y_true: True values
         @return: SMAPE loss
         """
-        eps = 1e-8
-        return 100*torch.mean(2 * torch.abs(y_pred - y_true) / (torch.abs(y_pred) + torch.abs(y_true) + eps))
+        return self.smape(y_pred, y_true)*100
 
     def __str__(self):
         return "SMAPE"
