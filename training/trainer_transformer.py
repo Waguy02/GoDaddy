@@ -215,6 +215,7 @@ class TrainerTransformerPredictor:
         """
         assert test_dataloader.batch_size == 1, "Batch size must be 1 for test"
         predictions = []
+        pred_by_cfips={} #For each cfips, we store the predictions, we keep only the first prediction
         row_ids = []
         with torch.no_grad():
             self.network.eval()
@@ -227,11 +228,19 @@ class TrainerTransformerPredictor:
                 """ 
                 2.Loss computation and other metrics
                 """
-                predictions.append(y_pred)
+
 
                 ##Update all microbusiness_den isty column
                 row_id=test_dataloader.dataset.test_df.loc[i,"row_id"]
                 row_ids.append(row_id)
+
+                cfips=test_dataloader.dataset.test_df.loc[i,"cfips"]
+                if cfips not in pred_by_cfips:
+                    pred_by_cfips[cfips]=y_pred
+                else:
+                    y_pred=pred_by_cfips[cfips]#We keep only the first prediction
+
+                predictions.append(y_pred)
 
                 test_dataloader.dataset.main_df.loc[test_dataloader.dataset.main_df["row_id"]==row_id,"microbusiness_density"]=y_pred
 
