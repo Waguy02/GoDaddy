@@ -137,11 +137,13 @@ class TrainerTransformerPredictor:
 
             epoch_val_loss =self.eval(val_dataloader,epoch)
 
-            #If step lr scheduler
-            if isinstance(self.scheduler,torch.optim.lr_scheduler.StepLR):
-                self.scheduler.step()
-            else:
-                self.scheduler.step(epoch_val_loss.value)
+            #If step lr scheduler and currrent lr is not lower than 1e-5
+            current_lr= self.optimizer.param_groups[0]['lr']
+            if current_lr>=2e-5:
+                if isinstance(self.scheduler,torch.optim.lr_scheduler.StepLR):
+                    self.scheduler.step()
+                else:
+                    self.scheduler.step(epoch_val_loss.value)
 
             infos = {
                 "epoch": epoch,

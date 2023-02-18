@@ -140,13 +140,13 @@ class TransformerPredictor(nn.Module):
 
 
 
+        self.regressor = nn.Sequential(
+            nn.Linear(2*self.emb_dim, 2048),
+            nn.ReLU(),
+            nn.Linear(2048,  1)
+        )
         if self.use_census:
-            self.regressor = nn.Sequential(
-                nn.Linear(2*self.emb_dim, 2048),
-                nn.ReLU(),
-                # self.dropout,
-                nn.Linear(2048,  1)
-            )
+            pass
 
         else:
             self.regressor = nn.Sequential(
@@ -233,7 +233,7 @@ class TransformerPredictor(nn.Module):
         X = self.input_embedding(X)
 
         # 3. Add the positional encoding
-        X = self.positional_encoding(X)
+        # X = self.positional_encoding(X)
 
         # 4. Add a query token to the input.
         if self.use_census:
