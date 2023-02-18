@@ -129,14 +129,11 @@ class TransformerPredictor(nn.Module):
         self.dropout = nn.Dropout(p=self.dropout_rate)
         self.transformer_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
-                                       dropout=0,
                                        batch_first=True),
             num_layers=self.n_layers
         )
         self.transformer_decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
-                                       dropout=0,
-
                                        batch_first=True),
             num_layers=self.n_layers,
         )
@@ -147,8 +144,8 @@ class TransformerPredictor(nn.Module):
             self.regressor = nn.Sequential(
                 nn.Linear(2*self.emb_dim, 2048),
                 nn.ReLU(),
-                self.dropout,
-                nn.Linear(2048, 1)
+                # self.dropout,
+                nn.Linear(2048,  1)
             )
 
         else:
