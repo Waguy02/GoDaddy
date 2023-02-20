@@ -70,7 +70,8 @@ class TransformerPredictor(nn.Module):
         self.use_derivative = use_derivative
         self.dropout_rate = dropout_rate
         if self.use_derivative:
-            self.input_dim += 2  # 2 for derivative
+            self.input_dim += 2  # 2 for the first order derivatives
+            self.input_dim += 2  # 2 for the second order derivatives
 
         if self.use_census:
             self.input_dim = self.input_dim + self.census_emb_dim
@@ -143,6 +144,7 @@ class TransformerPredictor(nn.Module):
         self.regressor = nn.Sequential(
             nn.Linear(2*self.emb_dim, 2048),
             nn.ReLU(),
+            self.dropout,
             nn.Linear(2048,  1)
         )
         if self.use_census:
@@ -213,13 +215,24 @@ class TransformerPredictor(nn.Module):
         X = X_input[:, :-1, :]  # Removing the target from the input (Only required when using census features)
 
         if self.use_derivative:
+
+            #1. First order derivative
             d_left = torch.zeros((X.shape[0], X.shape[1], 1), device=DEVICE)
             d_left[:, 1:, -1] = X[:, 1:, -1] - X[:, :-1, -1]
 
             d_right = torch.zeros((X.shape[0], X.shape[1], 1), device=DEVICE)
             d_right[:, :-1, -1] = X[:, 1:, -1] - X[:, :-1, -1]
 
-            X = torch.cat((X, d_left,  d_right), dim=-1)  ## Adding the derivative to the input as a new feature
+            #2. Second order derivative
+            d2_left = torch.zeros((X.shape[0], X.shape[1], 1), device=DEVICE)
+            d2_left[:, 2:, -1] = d_left[:, 2:, -1] - d_left[:, 1:-1, -1]
+
+            d2_right = torch.zeros((X.shape[0], X.shape[1], 1), device=DEVICE)
+            d2_right[:, :-2, -1] = d_left[:, 2:, -1] - d_left[:, 1:-1, -1]
+
+
+
+            X = torch.cat((X, d_left,  d_right,d2_left, d2_right), dim=-1)  ## Adding the derivative to the input as a new feature
 
         if self.use_census:
             target = X[:, -1, :]  # Last element of the sequence is the target .
@@ -233,16 +246,12 @@ class TransformerPredictor(nn.Module):
         X = self.input_embedding(X)
 
         # 3. Add the positional encoding
-        # X = self.positional_encoding(X)
+        X = self.positional_encoding(X)
 
         # 4. Add a query token to the input.
         if self.use_census:
             X = torch.cat((query.unsqueeze(1), X), dim=1)
-
-
-
         # 4. Apply the transformer encoder to get the memory
-
 
         X = self.transformer_encoder(X)
 

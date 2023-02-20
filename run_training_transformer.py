@@ -90,12 +90,12 @@ def main(args):
                                       max_seq_len=args.seq_len-1,
                                       reset=args.reset,
                                       dropout_rate=args.dropout_rate,
-                                      census_emb_dim=args.census_emb_dim, ).to(DEVICE)
+                                      census_emb_dim=args.census_emb_dim).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(8*args.batch_size/32),gamma=0.7,verbose=True)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(20*args.batch_size/32),gamma=0.5,verbose=True)
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=4,cooldown=4, verbose=True,min_lr=1e-5)
     criterion= SmapeCriterion().to(DEVICE)
 

@@ -139,7 +139,7 @@ class TrainerTransformerPredictor:
 
             #If step lr scheduler and currrent lr is not lower than 1e-5
             current_lr= self.optimizer.param_groups[0]['lr']
-            if current_lr>=2e-5:
+            if current_lr>=2e-6:
                 if isinstance(self.scheduler,torch.optim.lr_scheduler.StepLR):
                     self.scheduler.step()
                 else:
