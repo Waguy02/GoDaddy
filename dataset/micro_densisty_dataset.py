@@ -177,7 +177,12 @@ class MicroDensityDataset(Dataset):
         all_sequences= self.sequences + other_dataset.sequences
         random.shuffle(all_sequences)
         self.sequences=all_sequences[:int(len(all_sequences)*size)]
+
+        all_tensor_list = self.tensor_list.copy().update(other_dataset.tensor_list)
+        self.tensor_list={k:all_tensor_list[k] for k in self.sequences}
+
         other_dataset.sequences=all_sequences[int(len(all_sequences)*size):]
+        other_dataset.tensor_list={k:all_tensor_list[k] for k in other_dataset.sequences}
         logging.info("Combined dataset: {} sequences for train and {} sequences for test".format(len(self.sequences),len(other_dataset.sequences)))
 
 
