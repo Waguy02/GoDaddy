@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch import nn
 from constants import DEVICE, USE_CENSUS, FEATURES_AE_LATENT_DIM, FEATURES_AE_CENSUS_DIR, N_CENSUS_FEATURES, \
-    N_DIMS_COUNTY_ENCODING
+    N_DIMS_COUNTY_ENCODING, QUERY_CENSUS_DIMS
 from networks.features_autoencoder import FeaturesAENetwork
 
 
@@ -43,7 +43,6 @@ class TransformerPredictor(nn.Module):
                  dim_feedforward=128,
                  use_derivative=True,
                  use_census=USE_CENSUS,
-                 census_emb_dim=4,
                  dropout_rate=0.01,
                  experiment_dir="my_model", reset=False, load_best=True):
         """
@@ -57,6 +56,7 @@ class TransformerPredictor(nn.Module):
         """
 
         super(TransformerPredictor, self).__init__()
+        assert use_census, "census_data must be used in this version of the model"
         self.variante_num = 4
         self.emb_dim = emb_dim
         self.n_layers = n_layers
@@ -65,7 +65,6 @@ class TransformerPredictor(nn.Module):
         self.use_census = use_census
         self.max_seq_len = max_seq_len
         self.census_features_encoder = None
-        self.census_emb_dim = census_emb_dim
         self.input_dim = 1
         self.use_derivative = use_derivative
         self.dropout_rate = dropout_rate
@@ -74,7 +73,7 @@ class TransformerPredictor(nn.Module):
             self.input_dim += 2  # 2 for the second order derivatives
 
         if self.use_census:
-            self.input_dim = self.input_dim + self.census_emb_dim
+            self.input_dim = self.input_dim
 
         self.experiment_dir = experiment_dir
         self.model_name = os.path.basename(self.experiment_dir)
@@ -86,8 +85,8 @@ class TransformerPredictor(nn.Module):
 
         if not reset: self.load_state()
 
-    def format_model_name(use_census, use_derivative, emb_dim, census_emb_dim, n_layers, n_head, dim_feedforward, seq_len, seq_stride, learning_rate, batch_size, dropout_rate):
-        model_name = f"trf_{'ae_' if use_census else ''}{'dv_' if use_derivative else ''}ed.{emb_dim}{'_dce.' + str(census_emb_dim) if use_census else ''}_nl.{n_layers}_nh.{n_head}_df.{dim_feedforward}_sl.{seq_len}_ss.{seq_stride}_lr.{learning_rate}_bs.{batch_size}_do.{dropout_rate}"
+    def format_model_name(use_census, use_derivative, emb_dim, n_layers, n_head, dim_feedforward, seq_len, seq_stride, learning_rate, batch_size, dropout_rate):
+        model_name = f"trf_{'ae_' if use_census else ''}{'dv_' if use_derivative else ''}ed.{emb_dim}_nl.{n_layers}_nh.{n_head}_df.{dim_feedforward}_sl.{seq_len}_ss.{seq_stride}_lr.{learning_rate}_bs.{batch_size}_do.{dropout_rate}"
         return model_name
 
     def build_from_config(config, experiment_dir, reset=False, load_best=True):
@@ -100,7 +99,6 @@ class TransformerPredictor(nn.Module):
             use_derivative=config["use_derivative"],
             use_census=config["use_census"],
             dropout_rate=config["dropout_rate"],
-            census_emb_dim=config["census_emb_dim"],
             reset=reset,
             load_best=load_best,
             experiment_dir=experiment_dir,
@@ -116,10 +114,8 @@ class TransformerPredictor(nn.Module):
         """
         # Input encoder from self.input_dim to self.emb_dim along with positional encoding
         if self.use_census:
-            self.query_encoder = nn.Sequential(nn.Linear(N_DIMS_COUNTY_ENCODING + N_CENSUS_FEATURES, self.emb_dim))
-            self.census_features_encoder = nn.Sequential(
-                nn.Linear(N_CENSUS_FEATURES, self.census_emb_dim),
-            )
+            self.query_encoder = nn.Sequential(nn.Linear(QUERY_CENSUS_DIMS, self.emb_dim))
+
 
         self.input_embedding = nn.Sequential(
             nn.Linear(self.input_dim, self.emb_dim),
@@ -159,7 +155,6 @@ class TransformerPredictor(nn.Module):
             "use_census":self.use_census,
             "use_derivative":self.use_derivative,
             "emb_dim":self.emb_dim,
-            "census_emb_dim":self.census_emb_dim,
             "n_layers":self.n_layers,
             "n_head":self.n_head,
             "dim_feedforward":self.dim_feedforward,
@@ -204,11 +199,12 @@ class TransformerPredictor(nn.Module):
             os.makedirs(self.experiment_dir)
 
     # 4. Forward call
-    def forward(self, X_input):
+    def forward(self, X_input, query_census=None):
         """
         +Forward call here.
         It a time series, so we need the full sequence output (strided by 1)
         @param X:
+        @param query_census: Is not None when using census features
         @return:
         """
         # 0. Preparing the input (Removing the target from the input)
@@ -230,23 +226,19 @@ class TransformerPredictor(nn.Module):
             d2_right = torch.zeros((X.shape[0], X.shape[1], 1), device=DEVICE)
             d2_right[:, :-2, -1] = d_left[:, 2:, -1] - d_left[:, 1:-1, -1]
 
-
-
             X = torch.cat((X, d_left,  d_right,d2_left, d2_right), dim=-1)  ## Adding the derivative to the input as a new feature
-
-        if self.use_census:
-            target = X[:, -1, :]  # Last element of the sequence is the target .
-            query = self.query_encoder(target[:, :N_DIMS_COUNTY_ENCODING + N_CENSUS_FEATURES])
-
-            enc_census = self.census_features_encoder(
-                X[:, :, N_DIMS_COUNTY_ENCODING:N_CENSUS_FEATURES + N_DIMS_COUNTY_ENCODING])
-            X = torch.cat((X[:, :, N_CENSUS_FEATURES + N_DIMS_COUNTY_ENCODING:], enc_census), dim=-1)
 
         # 2. Apply the input encoder to the input
         X = self.input_embedding(X)
 
         # 3. Add the positional encoding
         X = self.positional_encoding(X)
+
+        if self.use_census:
+            query = self.query_encoder(query_census)
+            X = torch.cat((query.unsqueeze(1), X), dim=1)
+
+
 
         # 4. Add a query token to the input.
         if self.use_census:

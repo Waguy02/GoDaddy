@@ -44,7 +44,7 @@ def cli():
     parser.add_argument("--n_head", "-nh", type=int, default=3, help="Number of heads of the transformer")
     parser.add_argument("--dim_feedforward", "-df", type=int, default=256, help="Feedforward dimension of the transformer")
     parser.add_argument("--dropout_rate", "-do", type=float, default=0.05, help="Dropout of the transformer")
-    parser.add_argument("--census_emb_dim", "-dce", type=int, default=4, help="Census embedding dimension")
+
 
     parser.add_argument("--test_only", "-i", default=False, action='store_true', help="Inference mode")
     return parser.parse_args()
@@ -58,7 +58,6 @@ def main(args):
             use_census=args.use_census,
             use_derivative=args.use_derivative,
             emb_dim=args.emb_dim,
-            census_emb_dim=args.census_emb_dim,
             n_layers=args.n_layers,
             n_head=args.n_head,
             dim_feedforward=args.dim_feedforward,
@@ -90,7 +89,7 @@ def main(args):
                                       max_seq_len=args.seq_len-1,
                                       reset=args.reset,
                                       dropout_rate=args.dropout_rate,
-                                      census_emb_dim=args.census_emb_dim).to(DEVICE)
+                                      ).to(DEVICE)
 
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
@@ -119,11 +118,10 @@ def main(args):
 
     if not os.path.exists(datasets_pickle_path):
 
-        train_dataset = MicroDensityDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
-                                            use_census=args.use_census)
-
         val_dataset = MicroDensityDataset(type=DatasetType.VALID, seq_len=args.seq_len, stride=args.seq_stride,
                                           use_census=args.use_census)
+        train_dataset = MicroDensityDataset(type=DatasetType.TRAIN, seq_len=args.seq_len, stride=args.seq_stride,
+                                            use_census=args.use_census)
 
         test_dataset = MicroDensityDataset(type=DatasetType.TEST, seq_len=args.seq_len, stride=args.seq_stride,
                                            use_census=args.use_census)

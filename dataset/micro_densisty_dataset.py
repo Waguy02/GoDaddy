@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS, TEST_FILE, CENSUS_FILE, MEAN_MB, STD_MB
+from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS, TEST_FILE, CENSUS_FILE, MEAN_MB, STD_MB, CENSUS_FEATURES
 from my_utils import DatasetType, extract_census_features, get_cfips_index
 random.seed(42)
 EVAL_START_DATE = "2022-10-01"
@@ -21,9 +21,8 @@ class MicroDensityDataset(Dataset):
         self.stride = stride if type == DatasetType.TRAIN else 1
         self.use_census = use_census
         self.load_data()
-        self.prepare_sequences()
-
         self.tensor_list = dict()
+        self.prepare_sequences()
         if type!=DatasetType.TEST:
             self.prepare_tensors()
 
@@ -58,9 +57,15 @@ class MicroDensityDataset(Dataset):
         if self.use_census:
             #Merge the census features
             self.cfips_index=get_cfips_index()
-            self.census_df = pd.read_csv(CENSUS_FILE)
+            self.census_df=pd.read_csv(CENSUS_FILE)
 
-            self.main_df=pd.merge(self.main_df,self.census_df,on=["cfips","first_day_of_month"],how="left")
+            #Create a dictionary of the census data for each cfips
+            self.census_dict=dict()
+            for i in range(len(self.census_df)):
+                cfips=self.census_df.iloc[i]["cfips"]
+                self.census_dict[cfips]=self.census_df.iloc[i]
+
+
 
 
 
@@ -93,6 +98,7 @@ class MicroDensityDataset(Dataset):
                 #Get the corresponding ids
                 self.sequences.append((df.iloc[i]["id"], df.iloc[i]["id"]+ self.seq_len))
 
+                ##DEBUG
 
 
         else :
@@ -159,11 +165,14 @@ class MicroDensityDataset(Dataset):
 
 
         if self.use_census:
-            censur_features_tensor = extract_census_features(rows_data, cfips_index=self.cfips_index,single_row=False)
-            tensor = torch.cat((censur_features_tensor,tensor), dim=1)
+            census_data=self.census_dict[rows_data.iloc[0]["cfips"]]
+            #Get the last value of active
+            active=int(rows_data.iloc[-1]["active"])
+            census_tensor=extract_census_features(census_data, active, self.cfips_index)
 
-        return tensor
+            return {"density":tensor,"census":census_tensor}
 
+        return {"density":tensor}
 
 
     def mix_with(self, other_dataset, size=0.8):

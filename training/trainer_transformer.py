@@ -97,7 +97,7 @@ class TrainerTransformerPredictor:
             """
             running_loss=Averager()
             pbar = tqdm(train_dataloader, desc=f"Epoch {epoch + 1}/{self.nb_epochs}")
-            for _, batch in enumerate(pbar):
+            for _, batch_dict in enumerate(pbar):
                 """
                 Training lopp
                 """
@@ -108,16 +108,20 @@ class TrainerTransformerPredictor:
                 """
                 1.Forward pass
                 """
-                batch = batch.to(DEVICE)
+                tensor_batch = batch_dict["density"]
+                census_batch = batch_dict["census"]
 
-                y_pred = self.network(batch)
+                tensor_batch = tensor_batch.to(DEVICE)
+                census_batch = census_batch.to(DEVICE)
+
+                y_pred = self.network(tensor_batch,census_batch)
                 ## The output is the values of the density for each time step
 
                 """
                 2.Loss computation and other metrics
                 """
                 # The density is the last item of the batch
-                y_true = batch[:,:,-1].to(DEVICE)
+                y_true = tensor_batch[:,:,-1].to(DEVICE)
                 loss = self.loss_fn(y_pred, y_true[:, -1:])
 
                 """
@@ -183,7 +187,7 @@ class TrainerTransformerPredictor:
             self.network.eval()
             running_loss=Averager()
             pbar = tqdm(val_dataloader, desc=f"Validation Epoch {epoch + 1}/{self.nb_epochs}")
-            for _, batch in enumerate(pbar):
+            for _, batch_dict in enumerate(pbar):
 
                 """
                 Training lopp
@@ -191,12 +195,16 @@ class TrainerTransformerPredictor:
                 """
                 1.Forward pass
                 """
-                batch=batch.to(DEVICE)
-                y_pred = self.network(batch)
+                tensor_batch = batch_dict["density"]
+                census_batch = batch_dict["census"]
+
+                tensor_batch=tensor_batch.to(DEVICE)
+                census_batch=census_batch.to(DEVICE)
+                y_pred = self.network(tensor_batch,census_batch)
                 """ 
                 2.Loss computation and other metrics
                 """
-                y_true = batch[:,:,-1]
+                y_true = tensor_batch[:,:,-1]
 
 
                 loss = self.loss_fn(y_pred, y_true[:, -1:])
@@ -221,9 +229,14 @@ class TrainerTransformerPredictor:
         row_ids = []
         with torch.no_grad():
             self.network.eval()
-            for i, input in enumerate(tqdm(test_dataloader," Running tests for submission")):
-                input = input.to(DEVICE)
-                y_pred = self.network(input.to(DEVICE)).cpu().squeeze().item()
+            for i, batch_dict in enumerate(tqdm(test_dataloader," Running tests for submission")):
+                tensor_batch = batch_dict["density"]
+                census_batch = batch_dict["census"]
+
+                tensor_batch = tensor_batch.to(DEVICE)
+                census_batch = census_batch.to(DEVICE)
+
+                y_pred = self.network(tensor_batch,census_batch).cpu().squeeze().item()
 
                 # Denormalize. MEAN_MB, STD_MB (if noramlized)
                 # y_pred = y_pred * STD_MB + MEAN_MB

@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from constants import DATA_DIR, N_COUNTY, N_DIMS_COUNTY_ENCODING, CENSUS_FEATURES
+from constants import DATA_DIR, N_COUNTY, N_DIMS_COUNTY_ENCODING, CENSUS_FEATURES, CENSUS_YEARS, \
+    CENSUS_FEATURES_MIN_MAX, QUERY_CENSUS_DIMS
 
 
 def read_json(path_json):
@@ -19,7 +20,6 @@ def chunks(data, SIZE):
     it = iter(data)
     for _ in range(0, len(data), SIZE):
         yield {k: data[k] for k in islice(it, SIZE)}
-
 def sorted_dict(x, ascending=True):
     """
     Sort dict according to value.
@@ -42,7 +42,6 @@ def reverse_dict(input_dict):
         inv_dict[v] = inv_dict.get(v, []) + [k]
 
     return inv_dict
-
 def save_matrix(matrix,filename):
     with open(filename,'wb') as output:
         np.save(output,matrix)
@@ -53,9 +52,6 @@ def load_matrix(filename,auto_delete=False):
     if auto_delete:
         os.remove(filename)
     return matrix
-
-
-
 class Averager:
     def __init__(self):
         self.current_total = 0.0
@@ -75,71 +71,55 @@ class Averager:
     def reset(self):
         self.current_total = 0.0
         self.iterations = 0.0
-
-
-
 from enum import Enum
 class DatasetType(Enum):
     TRAIN="train"
     VALID="valid"
     TEST="test"
 
-
-
-def extract_census_features(row, cfips_index ,single_row=True):
+def extract_census_features(row, active, cfips_index):
     """
-
     @param row: Row of the dataframe
     @param cfips_index: Index of cfips
+    @param active: The number of active cases for the county
     @return:
     """
     ##If series :
-    if single_row:
-        features_tensor = torch.tensor( [
-                                        row[CENSUS_FEATURES[0]],
-                                        row[CENSUS_FEATURES[1]],
-                                        row[CENSUS_FEATURES[2]],
-                                        row[CENSUS_FEATURES[3]],
-                                        row[CENSUS_FEATURES[4]],
-                                        row[CENSUS_FEATURES[5]]
-                                        ], dtype=torch.float32)
+    #N_YEARS*N_FEATURES+ N_DIMS_COUNTY_ENCODING+1
+    features_tensor= torch.zeros(QUERY_CENSUS_DIMS)
 
-        cfips= row['cfips']
-        cfips_one_hot = get_cfips_encoding(cfips, cfips_index)
-        # Min-max normalization
-        features_tensor[0] = (features_tensor[0] - 24.5) / (97.6 - 24.5)
-        features_tensor[1] = (features_tensor[1] / 48)
-        features_tensor[2] = (features_tensor[2] / 54)
-        features_tensor[3] = (features_tensor[3] / 17.4)
-        features_tensor[4] = (features_tensor[4] - 17109) / (1586821 - 17109)
-        features_tensor[5] = (features_tensor[5] / 1167744)
+    idx=0
+    for feature in CENSUS_FEATURES:
+        start=idx
+        features_values=[]
+        for year in CENSUS_YEARS:
+            min,max=CENSUS_FEATURES_MIN_MAX[feature]
+            features_values.append((row[f"{feature}_{year}"]-min)/(max-min))
+            idx+=1
 
-    else :
-        features_tensor= torch.from_numpy(row[CENSUS_FEATURES].values)
-        cfips= row['cfips'].iloc[0]
-        cfips_one_hot= get_cfips_encoding(cfips,cfips_index).repeat(features_tensor.shape[0],1)
-        # cfips_one_hot = torch.stack(row_one_hots)
-        #Min-max normalization
-        features_tensor[:,0] = (features_tensor[:,0]- 24.5)/ (97.6-24.5)
-        features_tensor[:,1] = (features_tensor[:,1] /48)
-        features_tensor[:,2] = (features_tensor[:,2]/ 54)
-        features_tensor[:,3] = (features_tensor[:,3] / 17.4)
-        features_tensor[:,4] = (features_tensor[:,4]- 17109)/(1586821-17109)
-        features_tensor[:,5] = (features_tensor[:,5]/1167744)
+        #Fill nan by interpolation
+        features_values=np.array(features_values)
+        nan_idx=np.where(np.isnan(features_values))[0]
+        if len(nan_idx)>0:
+            #Interpolate
+            features_values[nan_idx]=np.interp(nan_idx,np.where(~np.isnan(features_values))[0], features_values[~np.isnan(features_values)])
+        features_tensor[start:idx]=torch.tensor(features_values,dtype=torch.float32)
 
-    ##Add one-hot encoding of cfips
-    if single_row:
-        features_tensor = torch.cat((cfips_one_hot, features_tensor))
-    else:
-        features_tensor = torch.cat((cfips_one_hot,features_tensor), 1)
+
+
+
+
+    #Add cfips encoding
+    cfips= row['cfips']
+    cfips_one_hot= get_cfips_encoding(cfips,cfips_index)
+
+    features_tensor[idx + 1:idx + 1 + N_DIMS_COUNTY_ENCODING] = cfips_one_hot
+    #Add active
+    min_active,max_active=CENSUS_FEATURES_MIN_MAX['active']
+    features_tensor[-1]=(active- min_active)/(max_active-min_active)
+
 
     return features_tensor.float()
-
-
-
-
-
-
 def get_cfips_index():
     """
     Return a dictionary with key=cfips and value=index for using a one-hot encoding
@@ -149,8 +129,6 @@ def get_cfips_index():
     cfips.sort()
     #Sort cfips
     return {cfips[i]: i for i in range(len(cfips))}
-
-
 def get_cfips_encoding(cfips,cfips_index):
     """
      return the base 2 encoding of cfips
