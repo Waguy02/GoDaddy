@@ -65,15 +65,14 @@ class TransformerPredictor(nn.Module):
         self.use_census = use_census
         self.max_seq_len = max_seq_len
         self.census_features_encoder = None
-        self.input_dim = 1
+        self.input_dim = 2
         self.use_derivative = use_derivative
         self.dropout_rate = dropout_rate
         if self.use_derivative:
             self.input_dim += 2  # 2 for the first order derivatives
             self.input_dim += 2  # 2 for the second order derivatives
 
-        if self.use_census:
-            self.input_dim = self.input_dim
+
 
         self.experiment_dir = experiment_dir
         self.model_name = os.path.basename(self.experiment_dir)
@@ -126,7 +125,7 @@ class TransformerPredictor(nn.Module):
         self.dropout = nn.Dropout(p=self.dropout_rate)
         self.transformer_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
-                                       batch_first=True,dropout=0.05),
+                                       batch_first=True,dropout=0.1),
             num_layers=self.n_layers
         )
         self.transformer_decoder = nn.TransformerDecoder(
@@ -141,7 +140,7 @@ class TransformerPredictor(nn.Module):
             nn.Linear(2*self.emb_dim, 2048),
             nn.ReLU(),
             self.dropout,
-            nn.Linear(2048,  1)
+            nn.Linear(2048 ,  1)
         )
         if self.use_census:
             pass

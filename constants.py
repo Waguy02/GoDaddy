@@ -36,6 +36,7 @@ QUERY_CENSUS_DIMS= len(CENSUS_FEATURES) * len(CENSUS_YEARS) + N_DIMS_COUNTY_ENCO
 FEATURES_AE_CENSUS_DIR=os.path.join(EXPERIMENTS_DIR, "features_ae_2_dims")
 FEATURES_AE_LATENT_DIM= 2
 TRAIN_FILE= os.path.join(DATA_DIR, "train.csv")
+VALID_FILE= os.path.join(DATA_DIR, "revealed_test.csv")
 TEST_FILE= os.path.join(DATA_DIR, "test.csv")
 CENSUS_FILE =os.path.join(DATA_DIR, "census_starter_shifted.csv")
 NB_FUTURES= 10 #Number of days to predict

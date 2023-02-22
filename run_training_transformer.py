@@ -94,8 +94,8 @@ def main(args):
     #Adam optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=args.learning_rate)
 
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(30*args.batch_size/32),gamma=0.7,verbose=True)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=4,cooldown=4, verbose=True,min_lr=1e-5)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(10*args.batch_size/32),gamma=0.5,verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.7, patience=10,cooldown=10, verbose=True,min_lr=1e-5)
     criterion= SmapeCriterion().to(DEVICE)
 
 

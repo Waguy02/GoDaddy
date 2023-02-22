@@ -147,7 +147,7 @@ class TrainerTransformerPredictor:
                 if isinstance(self.scheduler,torch.optim.lr_scheduler.StepLR):
                     self.scheduler.step()
                 else:
-                    self.scheduler.step(epoch_val_loss.value)
+                    self.scheduler.step(running_loss.value)
 
             infos = {
                 "epoch": epoch,
