@@ -1,5 +1,0 @@
-Training : trf_ae_dv_ed.128_nl.8_nh.8_df.512_sl.15_ss.1_lr.0.001_bs.256
-Saving datasets to D:\Projets\GoDaddy\dataset\pickle\all_dataset_15_1_True.pickle
-Nb sequences : Train 75239 - Val 3135 - Test 25080
-Launch training on cuda
-Using encoder census data
