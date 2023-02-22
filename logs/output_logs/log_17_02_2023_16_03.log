@@ -1,0 +1,12 @@
+Loading existing config
+Loading model state : D:\Projets\GoDaddy\logs/experiments\trf_ae_dv_ed.128_dce.2_nl.8_nh.8_df.1024_sl.20_ss.1_lr.0.0005_bs.32_do.0.0\trf_ae_dv_ed.128_dce.2_nl.8_nh.8_df.1024_sl.20_ss.1_lr.0.0005_bs.32_do.0.0.pt
+Training : trf_ae_dv_ed.128_dce.2_nl.8_nh.8_df.1024_sl.20_ss.1_lr.0.0005_bs.32_do.0.0
+Resuming from epoch 17
+Loading datasets  from D:\Projets\GoDaddy\dataset\pickle\prepared_dataset_20_1_True.pickle
+Nb sequences : Train 59564 - Val 3135 - Test 25080
+Launch training on cuda
+Using encoder census data
+Setting lr to 0.0002
+Epoch 17 - Train loss: 200.0000 - Val loss: 200.0000
+Epoch 18 - Train loss: 148.4813 - Val loss: 55.1432
+Saving best model

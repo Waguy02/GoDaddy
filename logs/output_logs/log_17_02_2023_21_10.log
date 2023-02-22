@@ -1,0 +1,55 @@
+Training : trf_ae_dv_ed.128_dce.2_nl.6_nh.8_df.1024_sl.20_ss.1_lr.0.0005_bs.32_do.0.0
+Loading datasets  from D:\Projets\GoDaddy\dataset\pickle\prepared_dataset_20_1_True.pickle
+Nb sequences : Train 59564 - Val 3135 - Test 25080
+Launch training on cuda
+Using encoder census data
+Epoch 0 - Train loss: 8.6398 - Val loss: 4.1119
+Saving best model
+Epoch 1 - Train loss: 3.6063 - Val loss: 3.5931
+Saving best model
+Epoch 2 - Train loss: 3.1569 - Val loss: 2.6315
+Saving best model
+Epoch 3 - Train loss: 2.9730 - Val loss: 3.1872
+Epoch 4 - Train loss: 2.6267 - Val loss: 2.8527
+Epoch 5 - Train loss: 2.6229 - Val loss: 1.7181
+Saving best model
+Epoch 6 - Train loss: 2.5005 - Val loss: 3.0567
+Epoch 7 - Train loss: 2.4432 - Val loss: 1.5067
+Saving best model
+Epoch 8 - Train loss: 2.2945 - Val loss: 2.6297
+Epoch 9 - Train loss: 2.3530 - Val loss: 1.7588
+Epoch 10 - Train loss: 2.2239 - Val loss: 2.0765
+Epoch 11 - Train loss: 2.1672 - Val loss: 1.9921
+Epoch 12 - Train loss: 2.1104 - Val loss: 2.2170
+Epoch 13 - Train loss: 2.0878 - Val loss: 2.0024
+Epoch 14 - Train loss: 2.0475 - Val loss: 2.0223
+Epoch 15 - Train loss: 1.9842 - Val loss: 1.5098
+Epoch 16 - Train loss: 2.0235 - Val loss: 1.5022
+Saving best model
+Epoch 17 - Train loss: 2.0722 - Val loss: 1.5489
+Epoch 18 - Train loss: 2.0012 - Val loss: 1.8232
+Epoch 19 - Train loss: 1.9694 - Val loss: 2.2701
+Epoch 20 - Train loss: 1.9712 - Val loss: 3.0935
+Epoch 21 - Train loss: 1.9368 - Val loss: 1.4872
+Saving best model
+Epoch 22 - Train loss: 1.9504 - Val loss: 1.5679
+Epoch 23 - Train loss: 1.9864 - Val loss: 1.5120
+Epoch 24 - Train loss: 1.8619 - Val loss: 1.7285
+Epoch 25 - Train loss: 1.8813 - Val loss: 1.5725
+Epoch 26 - Train loss: 1.8776 - Val loss: 2.6236
+Epoch 27 - Train loss: 1.8570 - Val loss: 1.6463
+Epoch 28 - Train loss: 1.8324 - Val loss: 1.6453
+Epoch 29 - Train loss: 1.9808 - Val loss: 1.5734
+Epoch 30 - Train loss: 1.8486 - Val loss: 1.3210
+Saving best model
+Epoch 31 - Train loss: 1.8666 - Val loss: 1.5918
+Epoch 32 - Train loss: 1.8245 - Val loss: 1.9736
+Epoch 33 - Train loss: 1.8007 - Val loss: 1.3786
+Epoch 34 - Train loss: 1.8591 - Val loss: 1.6840
+Epoch 35 - Train loss: 1.8055 - Val loss: 1.6534
+Epoch 36 - Train loss: 1.8173 - Val loss: 1.4082
+Epoch 37 - Train loss: 1.7523 - Val loss: 1.3669
+Epoch 38 - Train loss: 1.7458 - Val loss: 1.4419
+Epoch 39 - Train loss: 1.8116 - Val loss: 1.3145
+Saving best model
+Loading best model state : D:\Projets\GoDaddy\logs/experiments\trf_ae_dv_ed.128_dce.2_nl.6_nh.8_df.1024_sl.20_ss.1_lr.0.0005_bs.32_do.0.0\trf_ae_dv_ed.128_dce.2_nl.6_nh.8_df.1024_sl.20_ss.1_lr.0.0005_bs.32_do.0.0.pt
