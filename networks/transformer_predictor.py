@@ -65,7 +65,7 @@ class TransformerPredictor(nn.Module):
         self.use_census = use_census
         self.max_seq_len = max_seq_len
         self.census_features_encoder = None
-        self.input_dim = 2
+        self.input_dim = 1
         self.use_derivative = use_derivative
         self.dropout_rate = dropout_rate
         if self.use_derivative:
@@ -125,22 +125,24 @@ class TransformerPredictor(nn.Module):
         self.dropout = nn.Dropout(p=self.dropout_rate)
         self.transformer_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
-                                       batch_first=True,dropout=0.1),
+                                       batch_first=True,dropout=0),
             num_layers=self.n_layers
         )
         self.transformer_decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(d_model=self.emb_dim, nhead=self.n_head, dim_feedforward=self.dim_feedforward,
-                                       batch_first=True,dropout=0.05),
+                                       batch_first=True,dropout=0),
             num_layers=self.n_layers,
         )
 
 
 
         self.regressor = nn.Sequential(
-            nn.Linear(2*self.emb_dim, 2048),
+            nn.Linear(2*self.emb_dim, 256),
             nn.ReLU(),
             self.dropout,
-            nn.Linear(2048 ,  1)
+            nn.Linear(256, 1024),
+            nn.ReLU(),
+            nn.Linear(1024 ,  1)
         )
         if self.use_census:
             pass
@@ -244,7 +246,7 @@ class TransformerPredictor(nn.Module):
             X = torch.cat((query.unsqueeze(1), X), dim=1)
         # 4. Apply the transformer encoder to get the memory
 
-        X = self.transformer_encoder(X)
+        # X = self.transformer_encoder(X)
 
         if self.use_census:
             query_enc = X[:, 0, :]

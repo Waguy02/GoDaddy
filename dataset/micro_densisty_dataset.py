@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+from datetime import datetime
 
 import pandas as pd
 import torch
@@ -8,13 +9,18 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from constants import DATA_DIR, N_CENSUS_FEATURES, USE_CENSUS, TEST_FILE, CENSUS_FILE, MEAN_MB, STD_MB, CENSUS_FEATURES, \
-    CENSUS_FEATURES_MIN_MAX
+    CENSUS_FEATURES_MIN_MAX, TRAIN_FILE, VALID_FILE
 from my_utils import DatasetType, extract_census_features, get_cfips_index
-random.seed(42)
+
+TRAIN_START_DATE = "2019-01-01"
 EVAL_START_DATE = "2022-11-01"
 TEST_START_DATE =  "2023-01-01"
 
-SEED=42
+TRAIN_START_DATE_DATETIME = datetime.strptime(TRAIN_START_DATE, "%Y-%m-%d")
+EVAL_START_DATE_DATETIME = datetime.strptime(EVAL_START_DATE, "%Y-%m-%d")
+
+SEED=45
+random.seed(SEED)
 class MicroDensityDataset(Dataset):
     def __init__(self, type, seq_len, stride=1,use_census=USE_CENSUS):
         self.type = type
@@ -37,12 +43,8 @@ class MicroDensityDataset(Dataset):
         Load data from the data items if necessary
         """
 
-        self.main_file = os.path.join(DATA_DIR, "train.csv")
+        self.main_file = TRAIN_FILE
         self.main_df = pd.read_csv(self.main_file)
-
-
-
-
         if self.type == DatasetType.TEST:
             self.test_df = pd.read_csv(TEST_FILE)
             self.test_df["microbusiness_density"] = [0 for _ in range(len(self.test_df))]
@@ -59,8 +61,7 @@ class MicroDensityDataset(Dataset):
 
 
         if self.type== DatasetType.VALID:
-            self.valid_df = self.main_df[self.main_df['first_day_of_month'] >= EVAL_START_DATE]
-            #merge valid and train
+            self.valid_df = pd.read_csv(VALID_FILE)
             self.main_df = pd.concat([self.main_df, self.valid_df], ignore_index=True)
 
 
@@ -187,12 +188,12 @@ class MicroDensityDataset(Dataset):
                                        dtype=torch.float32)  # Not considering the census features
 
         ##Add active variable
-        min_active, max_active = CENSUS_FEATURES_MIN_MAX["active"]
-        active = torch.tensor(rows_data[['active']].values,
-                                dtype=torch.float32)
-        active = (active - min_active) / (max_active - min_active)
-
-        tensor = torch.cat((active,tensor), dim=-1)
+        # min_active, max_active = CENSUS_FEATURES_MIN_MAX["active"]
+        # active = torch.tensor(rows_data[['active']].values,
+        #                         dtype=torch.float32)
+        # active = (active - min_active) / (max_active - min_active)
+        #
+        # tensor = torch.cat((active,tensor), dim=-1)
 
         #FEatures scaling
 
@@ -200,8 +201,8 @@ class MicroDensityDataset(Dataset):
         if self.use_census:
             census_data=self.census_dict[rows_data.iloc[0]["cfips"]]
             #Get the last value of active
-            active=rows_data.iloc[-1]["active"]
-            census_tensor=extract_census_features(census_data, active, self.cfips_index)
+            # active=rows_data.iloc[-1]["active"]
+            census_tensor=extract_census_features(census_data, self.cfips_index)
 
             return {"density":tensor,"census":census_tensor}
 

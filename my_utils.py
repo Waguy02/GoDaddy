@@ -77,7 +77,7 @@ class DatasetType(Enum):
     VALID="valid"
     TEST="test"
 
-def extract_census_features(row, active, cfips_index):
+def extract_census_features(row,  cfips_index):
     """
     @param row: Row of the dataframe
     @param cfips_index: Index of cfips
@@ -113,10 +113,11 @@ def extract_census_features(row, active, cfips_index):
     cfips= row['cfips']
     cfips_one_hot= get_cfips_encoding(cfips,cfips_index)
 
-    features_tensor[idx + 1:idx + 1 + N_DIMS_COUNTY_ENCODING] = cfips_one_hot
-    #Add active
-    min_active,max_active=CENSUS_FEATURES_MIN_MAX['active']
-    features_tensor[-1]=(active- min_active)/(max_active-min_active)
+    features_tensor[idx :idx + N_DIMS_COUNTY_ENCODING] = cfips_one_hot
+
+    # #Add active
+    # min_active,max_active=CENSUS_FEATURES_MIN_MAX['active']
+    # features_tensor[-1]=(active- min_active)/(max_active-min_active)
 
 
     return features_tensor.float()
